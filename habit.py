@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 from enum import Enum
 from typing import Optional
 
@@ -45,13 +45,15 @@ class Habit:
             raise TypeError("The habit must be daily, weekly or bi-weekly")
         
         self._name = name
-        self.start_date = begn_date or date.today()
-        self.created_date = date.today()
-        self._description = descp
-        self._frequency = freq 
+        self._frequency = freq
+        self._start_date = begn_date or date.today()
+        self._created_date = date.today()
+        self.description = descp
         self.completions: list[date] = []
         self.is_active: bool = True
         self.notes: dict[date, str] = {}
+
+    # --- Properties Definition ---
 
     @property #Blocks the name field from being altered. 
     def name(self) -> str: 
@@ -60,7 +62,7 @@ class Habit:
     @property #Blocks the frequency field from being altered. 
     def frequency(self) -> Frequency: 
         return self._frequency
-    
+
     @property #Conditional block on the start_date field.
     def start_date(self) -> date: 
         return self._start_date
@@ -79,33 +81,21 @@ class Habit:
             raise TypeError("The value must be a date.")
         
         if self.completions:
-            raise ValueError("")
+            raise ValueError("The start date cannot be changed after completions have already been recorded.")
         
         self._start_date = value
 
-#############################################################################################################################################################
+    @property #Conditional block on the created_date field.
+    def created_date(self) -> date: 
+        return self._created_date
+    
+    # --- Methods Definition ---
 
-    def __str__(self) -> str:
-        return f"{self.name} ({self.frequency.value})"
-    
-    def __repr__(self) -> str:
-        return f"Habit(name={self.name!r}, frequency={self.frequency})"
-    
-    @property
-    def description(self) -> str | None: 
-        return self._description
-    
-    @description.setter
-    def description(self, value: str | None) -> None: 
-        if value is not None and not isinstance(value, str):
-            raise TypeError("description must be a string or None")
-        self._description = value
-    
-    
-    
     def check_habit_completion(self, 
                                check_date: date = None) -> bool: 
-        """Function to mark habit has having been completed during the defined timefram."""
+        """
+        
+        """
 
         if not isinstance(check_date, date):
             raise TypeError(f"Wrong check_date format. Must be date, got {type(entry_date).__name__}")
@@ -117,6 +107,15 @@ class Habit:
 
         self.completions.append(check_date)
         return True
+
+    def __str__(self) -> str:
+        return f"{self.name} ({self.frequency.value})"
+    
+    def __repr__(self) -> str:
+        return f"Habit(name={self.name!r}, frequency={self.frequency})"
+
+   ################################################################################################################################################################ 
+        
 
     def add_note(self,
                  note_date: date,
