@@ -92,21 +92,43 @@ class Habit:
     # --- Methods Definition ---
 
     def check_habit_completion(self, 
-                               check_date: date = None) -> bool: 
+                               check_datetime: datetime = None) -> bool: 
         """
+        Function to allow the user to mark the habit as completed. 
+
+        Arguments: 
+            check_datetime: date and time of the completion. The default value is the current time. 
         
+        Returns: 
+            True if there is a new completion for the habit time period; 
+            False if the habit has already been checked for that time period.
+
+        Raises: 
+            TypeError: if the value is not a datetime. 
         """
 
-        if not isinstance(check_date, date):
-            raise TypeError(f"Wrong check_date format. Must be date, got {type(entry_date).__name__}")
+        if check_datetime is None: check_datetime = datetime.now()
 
-        if check_date is None: check_date = date.today()
+        if not isinstance(check_datetime, date):
+            raise TypeError(f"Wrong check_date format. Must be datetime, got {type(check_datetime).__name__}")
 
-        if check_date in self.completions:
-            return False
+        # Only one completion per day so the comparison is done on a daily granularity. 
+        already_checked = any(c.date() == check_datetime.date() for c in self.completions)
+        
+        if already_checked: return False
 
-        self.completions.append(check_date)
+        self.completions.append(check_datetime)
         return True
+    
+    def add_note(self,
+                 note_date: date,
+                 note: str) -> None:
+        """Function to allow the user to add notes to the habit. It can be used to add justifications for missing completion."""
+    
+        if not isinstance(note_date, date):
+            raise TypeError("entry_date must be a date")
+        
+        self.notes[note_date] = note
 
     def __str__(self) -> str:
         return f"{self.name} ({self.frequency.value})"
@@ -117,15 +139,7 @@ class Habit:
    ################################################################################################################################################################ 
         
 
-    def add_note(self,
-                 note_date: date,
-                 note: str) -> None:
-        """Function to allow the user to add notes to the habit. It can be used to add justifications for missing completion."""
     
-        if not isinstance(note_date, date):
-            raise TypeError("entry_date must be a date")
-        
-        self.notes[note_date] = note
     
 
 
@@ -154,7 +168,6 @@ class DailyHabit(Habit):
 
 #add date limitations for the notes and the check-ins can a user change the frequency on the same habit? 
 #criar os métodos: check habit late habit (different for each habit, delete habit, analyse habit, modidy habit)
-#Staging no git 
 #Ligação à base de dados 
 #Separar em classes, database operations, UI, etc
 #Criar a command-line interface 
