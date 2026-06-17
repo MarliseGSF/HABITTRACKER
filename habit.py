@@ -104,7 +104,7 @@ class Habit:
             False if the habit has already been checked for that time period.
 
         Raises: 
-            TypeError: if the value is not a datetime. 
+            TypeError: if the check_datetime is not a datetime. 
         """
 
         if check_datetime is None: check_datetime = datetime.now()
@@ -123,10 +123,19 @@ class Habit:
     def add_note(self,
                  note_date: date,
                  note: str) -> None:
-        """Function to allow the user to add notes to the habit. It can be used to add justifications for missing completion."""
+        """
+        Function to allow the user to add notes to the habit. It can be used to add justifications for missing completion.
+
+        Arguments: 
+            note_date: date to which the note refers to;
+            note: string with the note's content.
+        
+        Raises: 
+            TypeError: if note_date is not a date
+        """
     
         if not isinstance(note_date, date):
-            raise TypeError("entry_date must be a date")
+            raise TypeError("The note must be associated with a correct date.")
         
         self.notes[note_date] = note
 
@@ -136,14 +145,11 @@ class Habit:
     def __repr__(self) -> str:
         return f"Habit(name={self.name!r}, frequency={self.frequency})"
 
+   
+   
+   
    ################################################################################################################################################################ 
         
-
-    
-    
-
-
-
 
 
 class DailyHabit(Habit):
