@@ -105,12 +105,16 @@ class Habit:
 
         Raises: 
             TypeError: if the check_datetime is not a datetime. 
+            ValueError: if check_datetime is before the habit's start_date.
         """
 
         if check_datetime is None: check_datetime = datetime.now()
 
         if not isinstance(check_datetime, date):
             raise TypeError(f"Wrong check_date format. Must be datetime, got {type(check_datetime).__name__}")
+        
+        if check_datetime.date() < self.start_date:
+            raise ValueError("Cannot record a completion before the habit's start date")
 
         # Only one completion per day so the comparison is done on a daily granularity. 
         already_checked = any(c.date() == check_datetime.date() for c in self.completions)
@@ -120,24 +124,142 @@ class Habit:
         self.completions.append(check_datetime)
         return True
     
+    PERIOD_DAYS: int = 1
+
+    def _grace_period(self, check_date: date) -> bool: 
+        """
+        Function defines a grace period for the user to mark the habit as complete or add notes to it. 
+
+        Arguments: 
+            check_date: date of the note or completion the user wants to check. 
+
+        Raises:
+            TypeError: if check_date is not a date.
+        """
+        if not isinstance(check_date, datetime):
+            raise TypeError(f"The argument must be a date, got {type(check_date).__name__}")
+
+        days_since = (date.today() - check_date).days
+        grace_period = (self.PERIOD_DAYS / 2) + 2
+        return days_since <= self.PERIOD_DAYS + grace_period
+
+    def late_complete(self, check_datetime: datetime) -> bool:
+        """
+        Function that allows the user to retroactively mark a missed date as complete, if still within 
+        the grace period for this habit's frequency.
+
+        Args:
+            check_datetime: the missed date/time to mark as complete.
+
+        Returns:
+            True if successfully recorded, False if outside the grace period.
+
+        Raises:
+            TypeError: if check_datetime is not a datetime.
+        """
+
+        if not isinstance(check_datetime, datetime):
+            raise TypeError(f"The argument must be a datetime, got {type(check_datetime).__name__}")
+
+        if self._grace_period(check_datetime.date()):
+            return self.check_habit_completion(check_datetime)
+        return False
+        
     def add_note(self,
-                 note_date: date,
-                 note: str) -> None:
+                note_date: date,
+                note: str) -> bool:
         """
         Function to allow the user to add notes to the habit. It can be used to add justifications for missing completion.
+        Only allows the note creation during a specific period.
 
         Arguments: 
             note_date: date to which the note refers to;
             note: string with the note's content.
         
-        Raises: 
-            TypeError: if note_date is not a date
+        Returns:
+        True if the note was recorded, False if outside the grace period.
+
+        Raises:
+            TypeError: if note_date is not a date, or note is not a string.
+            ValueError: if note is empty or only whitespace or the note_date is before start_date.
         """
-    
+
         if not isinstance(note_date, date):
-            raise TypeError("The note must be associated with a correct date.")
+            raise TypeError(f"The argument must be a date, got {type(note_date).__name__}")
+        
+        if note_date < self.start_date:
+            raise ValueError("Cannot add a note before the habit's start date")
+        
+        if not self._grace_period(note_date.date()):
+            return False
+        
+        if not isinstance(note, str):
+            raise TypeError("The note must be a string")
+        
+        if not note.strip():
+            raise ValueError("The note cannot be empty")
+        
         
         self.notes[note_date] = note
+        return True
+
+    def get_current_habit_streak(self) -> int:
+        """
+        Function that checks how many consecutive periods (counting back from today) 
+        have at least one completion.
+
+        Returns:
+            The current streak length, in periods. 0 if no completions.
+        """
+        
+        if not self.completions:
+            return 0
+
+        today = date.today()
+        completion_dates = [c.date() for c in self.completions]  # strip time
+
+        periods_ago = sorted(set((today - d).days // self.PERIOD_DAYS for d in completion_dates))
+
+        streak = 0
+        for expected in range(len(periods_ago)):
+            if expected in periods_ago:
+                streak += 1
+            else:
+                break
+
+        return streak
+
+"""
+    def get_longest_streak(self) -> int:
+    """
+    Return the longest streak of consecutive periods this habit 
+    has ever achieved, across its entire history.
+
+    Returns:
+        The longest streak length, in periods. 0 if no completions.
+    """
+    if not self.completions:
+        return 0
+
+    completion_dates = [c.date() for c in self.completions]
+
+    # Convert each date into an absolute "period number" (not relative to today)
+    period_numbers = sorted(set(
+        (d - self.start_date).days // self.PERIOD_DAYS for d in completion_dates
+    ))
+
+    longest = 1
+    current = 1
+
+    for i in range(1, len(period_numbers)):
+        if period_numbers[i] == period_numbers[i - 1] + 1:
+            current += 1
+            longest = max(longest, current)
+        else:
+            current = 1
+
+    return longest
+    """
 
     def __str__(self) -> str:
         return f"{self.name} ({self.frequency.value})"
