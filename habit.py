@@ -49,7 +49,7 @@ class Habit:
         self._start_date = begn_date or date.today()
         self._created_date = date.today()
         self.description = descp
-        self.completions: list[date] = []
+        self._completions: list[datetime] = []
         self.is_active: bool = True
         self.notes: dict[date, str] = {}
 
@@ -80,7 +80,7 @@ class Habit:
         if not isinstance(value, date):
             raise TypeError("The value must be a date.")
         
-        if self.completions:
+        if self._completions:
             raise ValueError("The start date cannot be changed after completions have already been recorded.")
         
         self._start_date = value
@@ -88,6 +88,10 @@ class Habit:
     @property #Conditional block on the created_date field.
     def created_date(self) -> date: 
         return self._created_date
+    
+    @property #Read-only block on the completion history in order to prevent changes.
+    def completions(self) -> list[datetime]:
+        return self._completions.copy()
     
     # --- Methods Definition ---
 
@@ -117,11 +121,11 @@ class Habit:
             raise ValueError("Cannot record a completion before the habit's start date")
 
         # Only one completion per day so the comparison is done on a daily granularity. 
-        already_checked = any(c.date() == check_datetime.date() for c in self.completions)
+        already_checked = any(c.date() == check_datetime.date() for c in self._completions)
         
         if already_checked: return False
 
-        self.completions.append(check_datetime)
+        self._completions.append(check_datetime)
         return True
     
     PERIOD_DAYS: int = 1
@@ -171,6 +175,7 @@ class Habit:
         """
         Function to allow the user to add notes to the habit. It can be used to add justifications for missing completion.
         Only allows the note creation during a specific period.
+        Only allows for one note per day or it will be overwritten.
 
         Arguments: 
             note_date: date to which the note refers to;
@@ -212,11 +217,11 @@ class Habit:
             The current streak length, in periods. 0 if no completions.
         """
         
-        if not self.completions:
+        if not self._completions:
             return 0
 
         today = date.today()
-        completion_dates = [c.date() for c in self.completions]  # strip time
+        completion_dates = [c.date() for c in self._completions]  # strip time
 
         periods_ago = sorted(set((today - d).days // self.PERIOD_DAYS for d in completion_dates))
 
@@ -237,10 +242,10 @@ class Habit:
             The longest streak length, in periods. 0 if no completions.
         """
         
-        if not self.completions:
+        if not self._completions:
             return 0
 
-        completion_dates = [c.date() for c in self.completions]
+        completion_dates = [c.date() for c in self._completions]
 
         # Convert each date into an absolute (not relative to today) "period number"
         period_numbers = sorted(set(
@@ -258,6 +263,20 @@ class Habit:
                 current = 1
 
         return longest
+    
+    def deactivate_habit(self) -> None:
+        """
+        Function to allow the user to deactivate an habit without deleting its history.
+        """
+        
+        self.is_active = False
+
+    def reactivate(self) -> None:
+        """
+        Function to allow the user to reactivate an habit.
+        """
+        
+        self.is_active = True
 
     def __str__(self) -> str:
         return f"{self.name} ({self.frequency.value})"
