@@ -229,37 +229,35 @@ class Habit:
 
         return streak
 
-"""
     def get_longest_streak(self) -> int:
-    """
-    Return the longest streak of consecutive periods this habit 
-    has ever achieved, across its entire history.
+        """
+        Function that returns the longest streak of consecutive periods this habit has ever achieved.
 
-    Returns:
-        The longest streak length, in periods. 0 if no completions.
-    """
-    if not self.completions:
-        return 0
+        Returns:
+            The longest streak length, in periods. 0 if no completions.
+        """
+        
+        if not self.completions:
+            return 0
 
-    completion_dates = [c.date() for c in self.completions]
+        completion_dates = [c.date() for c in self.completions]
 
-    # Convert each date into an absolute "period number" (not relative to today)
-    period_numbers = sorted(set(
-        (d - self.start_date).days // self.PERIOD_DAYS for d in completion_dates
-    ))
+        # Convert each date into an absolute (not relative to today) "period number"
+        period_numbers = sorted(set(
+            (d - self.start_date).days // self.PERIOD_DAYS for d in completion_dates
+        ))
 
-    longest = 1
-    current = 1
+        longest = 1
+        current = 1
 
-    for i in range(1, len(period_numbers)):
-        if period_numbers[i] == period_numbers[i - 1] + 1:
-            current += 1
-            longest = max(longest, current)
-        else:
-            current = 1
+        for i in range(1, len(period_numbers)):
+            if period_numbers[i] == period_numbers[i - 1] + 1:
+                current += 1
+                longest = max(longest, current)
+            else:
+                current = 1
 
-    return longest
-    """
+        return longest
 
     def __str__(self) -> str:
         return f"{self.name} ({self.frequency.value})"
