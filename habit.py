@@ -1,6 +1,7 @@
 from datetime import date, datetime
 from enum import Enum
 from typing import Optional
+from collections import Counter
 
 class Frequency(Enum):
     """
@@ -51,6 +52,7 @@ class Habit:
         self.description = descp
         self._completions: list[datetime] = []
         self.is_active: bool = True
+        self._manually_paused: bool = False
         self.notes: dict[date, str] = {}
 
     # --- Properties Definition ---
@@ -89,9 +91,17 @@ class Habit:
     def created_date(self) -> date: 
         return self._created_date
     
+    @property #Flag that verifies if an habit has started yet. 
+    def habit_has_started(self) -> bool: 
+        """
+        A Habit has started if it is passed the start date, regardless of completions.
+        """
+        return date.today() >= self.start_date
+    
     @property #Read-only block on the completion history in order to prevent changes.
     def completions(self) -> list[datetime]:
         return self._completions.copy()
+    
     
     # --- Methods Definition ---
 
@@ -269,14 +279,37 @@ class Habit:
         Function to allow the user to deactivate an habit without deleting its history.
         """
         
-        self.is_active = False
+        self._manually_paused = False
 
-    def reactivate(self) -> None:
+    def reactivate_habit(self) -> None:
         """
         Function to allow the user to reactivate an habit.
         """
         
-        self.is_active = True
+        self._manually_paused = True
+
+    @property #Flag to check if a habit is active
+    def is_active(self) -> bool:
+        """
+        Fuction that returns if a habit is active. 
+        A habit is active if: 
+            - it has already started;
+            - has not been manually paused using the deactivate_habit function;
+            - has not been abandoned. 
+        A habit is considered abandoned if it has no completions for two times the length of its grace period. 
+        """
+
+        if not self.habit_has_started: 
+            return False
+        if self._manually_paused: 
+            return False 
+        if not self._completions: 
+            return True #The habit is after the start date but does not have any completions yet
+
+        last_completion = max(c.date() for c in self._completions)
+        days_since = (date.today() - last_completion).days
+        abandonment_threshold = 2 * ((self.PERIOD_DAYS / 2) + 2)
+        return days_since <= abandonment_threshold
 
     def __str__(self) -> str:
         return f"{self.name} ({self.frequency.value})"
