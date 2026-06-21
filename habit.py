@@ -10,6 +10,7 @@ class Frequency(Enum):
 
     DAILY = "daily"
     WEEKLY = "weekly"
+    TWICEWEEKLY = "twice a week"
     BIWEEKLY = "bi-weekly"
 
 
@@ -18,6 +19,9 @@ class Habit:
     Class that represents a habit with a name, frequency, and completion history.
     """
     
+    PERIOD_DAYS: int = 1
+    REQUIRED_PER_PERIOD: int = 1
+
     def __init__(self, 
                  name: str, 
                  freq: Frequency,
@@ -29,7 +33,7 @@ class Habit:
 
         Arguments: 
             name: the name of the habit, cannot be empty and cannot be changed once defined;
-            freq: the frequency of the habit, must be DAILY, WEEKLY or BIWEEKLY; cannot be changed once defined;
+            freq: the frequency of the habit, must be DAILY, WEEKLY, TWICEWEEKLY or BIWEEKLY; cannot be changed once defined;
             begn_date: date when the user wants to start tracking the habit, optional argument, if not defined defaults to the date the habit was created, can only be changed if there were no checks yet; 
             descp: description of the habit, optional argument, can be changed at any time. 
 
@@ -43,7 +47,7 @@ class Habit:
             raise ValueError("The Habit must have a name.")
         
         if not isinstance(freq, Frequency):
-            raise TypeError("The habit must be daily, weekly or bi-weekly")
+            raise TypeError("The habit must be daily, weekly, twice a week, or bi-weekly")
         
         self._name = name
         self._frequency = freq
@@ -51,7 +55,6 @@ class Habit:
         self._created_date = date.today()
         self.description = descp
         self._completions: list[datetime] = []
-        self.is_active: bool = True
         self._manually_paused: bool = False
         self.notes: dict[date, str] = {}
 
@@ -64,6 +67,10 @@ class Habit:
     @property #Blocks the frequency field from being altered. 
     def frequency(self) -> Frequency: 
         return self._frequency
+    
+    @property #Conditional block on the created_date field.
+    def created_date(self) -> date: 
+        return self._created_date
 
     @property #Conditional block on the start_date field.
     def start_date(self) -> date: 
@@ -86,10 +93,6 @@ class Habit:
             raise ValueError("The start date cannot be changed after completions have already been recorded.")
         
         self._start_date = value
-
-    @property #Conditional block on the created_date field.
-    def created_date(self) -> date: 
-        return self._created_date
     
     @property #Flag that verifies if an habit has started yet. 
     def habit_has_started(self) -> bool: 
@@ -102,7 +105,64 @@ class Habit:
     def completions(self) -> list[datetime]:
         return self._completions.copy()
     
+    @property #Flag to check if a habit is active
+    def is_active(self) -> bool:
+        """
+        Fuction that returns if a habit is active. 
+        A habit is active if: 
+            - it has already started;
+            - has not been manually paused using the deactivate_habit function;
+            - has not been abandoned. 
+        A habit is considered abandoned if it has no completions for two times the length of its grace period. 
+        """
+
+        if not self.habit_has_started: 
+            return False
+        if self._manually_paused: 
+            return False 
+        if not self._completions: 
+            return True #The habit is after the start date but does not have any completions yet
+
+        last_completion = max(c.date() for c in self._completions)
+        days_since = (date.today() - last_completion).days
+        abandonment_threshold = 2 * ((self.PERIOD_DAYS / 2) + 2)
+        return days_since <= abandonment_threshold
     
+    @property
+    def is_habit_completed_for_current_period(self) -> bool:
+        """
+        Function that defines if all the required completions per period have been satisfied.
+        """
+    
+        if not self._completions:
+            return False
+
+        today = date.today()
+        completion_dates = [c.date() for c in self._completions]
+        current_period_count = sum(
+            1 for d in completion_dates
+            if (today - d).days // self.PERIOD_DAYS == 0
+        )
+        return current_period_count >= self.REQUIRED_PER_PERIOD
+    
+# --- Helper Methods Definition ---
+    def _grace_period(self, check_date: date) -> bool: 
+        """
+        Function defines a grace period for the user to mark the habit as complete or add notes to it. 
+
+        Arguments: 
+            check_date: date of the note or completion the user wants to check. 
+
+        Raises:
+            TypeError: if check_date is not a date.
+        """
+        if not isinstance(check_date, datetime):
+            raise TypeError(f"The argument must be a date, got {type(check_date).__name__}")
+
+        days_since = (date.today() - check_date).days
+        grace_period = (self.PERIOD_DAYS / 2) + 2
+        return days_since <= self.PERIOD_DAYS + grace_period
+
     # --- Methods Definition ---
 
     def check_habit_completion(self, 
@@ -137,25 +197,6 @@ class Habit:
 
         self._completions.append(check_datetime)
         return True
-    
-    PERIOD_DAYS: int = 1
-
-    def _grace_period(self, check_date: date) -> bool: 
-        """
-        Function defines a grace period for the user to mark the habit as complete or add notes to it. 
-
-        Arguments: 
-            check_date: date of the note or completion the user wants to check. 
-
-        Raises:
-            TypeError: if check_date is not a date.
-        """
-        if not isinstance(check_date, datetime):
-            raise TypeError(f"The argument must be a date, got {type(check_date).__name__}")
-
-        days_since = (date.today() - check_date).days
-        grace_period = (self.PERIOD_DAYS / 2) + 2
-        return days_since <= self.PERIOD_DAYS + grace_period
 
     def late_complete(self, check_datetime: datetime) -> bool:
         """
@@ -232,15 +273,17 @@ class Habit:
 
         today = date.today()
         completion_dates = [c.date() for c in self._completions]  # strip time
-
-        periods_ago = sorted(set((today - d).days // self.PERIOD_DAYS for d in completion_dates))
+        
+        #Counts the number of completions that fall into each period
+        period_counts = Counter(
+            (today - d).days // self.PERIOD_DAYS for d in completion_dates
+        )
 
         streak = 0
-        for expected in range(len(periods_ago)):
-            if expected in periods_ago:
-                streak += 1
-            else:
-                break
+        period = 0
+        while period_counts.get(period, 0) >= self.REQUIRED_PER_PERIOD:
+            streak += 1
+            period += 1
 
         return streak
 
@@ -288,28 +331,8 @@ class Habit:
         
         self._manually_paused = True
 
-    @property #Flag to check if a habit is active
-    def is_active(self) -> bool:
-        """
-        Fuction that returns if a habit is active. 
-        A habit is active if: 
-            - it has already started;
-            - has not been manually paused using the deactivate_habit function;
-            - has not been abandoned. 
-        A habit is considered abandoned if it has no completions for two times the length of its grace period. 
-        """
 
-        if not self.habit_has_started: 
-            return False
-        if self._manually_paused: 
-            return False 
-        if not self._completions: 
-            return True #The habit is after the start date but does not have any completions yet
-
-        last_completion = max(c.date() for c in self._completions)
-        days_since = (date.today() - last_completion).days
-        abandonment_threshold = 2 * ((self.PERIOD_DAYS / 2) + 2)
-        return days_since <= abandonment_threshold
+    # --- Display Methods---
 
     def __str__(self) -> str:
         return f"{self.name} ({self.frequency.value})"
