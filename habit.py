@@ -287,7 +287,7 @@ class Habit:
 
         return streak
 
-    def get_longest_streak(self) -> int:
+    def get_longest_habit_streak(self) -> int:
         """
         Function that returns the longest streak of consecutive periods this habit has ever achieved.
 
@@ -338,36 +338,104 @@ class Habit:
         return f"{self.name} ({self.frequency.value})"
     
     def __repr__(self) -> str:
-        return f"Habit(name={self.name!r}, frequency={self.frequency})"
-
-   
-   
-   
-   ################################################################################################################################################################ 
-        
+        return f"Habit(name={self.name!r}, frequency={self.frequency})"        
 
 
 class DailyHabit(Habit):
-    """Child Class that represents a daily habit"""
+    """
+    Child Class that represents a habit that has to be completed daily.
+    """
 
-    def __init__(self, name):
-        super().__init__(name = name,freq=Frequency.DAILY)
+    PERIOD_DAYS = 1
+    REQUIRED_PER_PERIOD = 1
+
+    def __init__(self, name, begn_date=None, descp=None):
+        """
+        Function that initializes a new daily habit
+
+        Arguments: 
+            name: the name of the habit, cannot be empty and cannot be changed once defined;
+            begn_date: date when the user wants to start tracking the habit, optional argument, if not defined defaults to the date the habit was created, can only be changed if there were no checks yet; 
+            descp: description of the habit, optional argument, can be changed at any time. 
+
+        Raises: 
+            ValueError: if name is empty or whitespace.
+            TypeError: if Frequency is not a Frequency(Enum) value.
+        """
+        super().__init__(name, Frequency.DAILY, begn_date, descp)
 
 
-class DailyHabit(Habit):
-    """Child Class that represents a weekly habit"""
+class WeeklyHabit(Habit):
+    """
+    Child Class that represents a habit that has to be completed once a week.
+    """
 
-    def __init__(self, name):
-        super().__init__(name = name,freq=Frequency.WEEKLY)
+    PERIOD_DAYS = 7
+    REQUIRED_PER_PERIOD = 1
+
+    def __init__(self, name, begn_date=None, descp=None):
+        """
+        Function that initializes a new weekly habit
+
+        Arguments: 
+            name: the name of the habit, cannot be empty and cannot be changed once defined;
+            begn_date: date when the user wants to start tracking the habit, optional argument, if not defined defaults to the date the habit was created, can only be changed if there were no checks yet; 
+            descp: description of the habit, optional argument, can be changed at any time. 
+
+        Raises: 
+            ValueError: if name is empty or whitespace.
+            TypeError: if Frequency is not a Frequency(Enum) value.
+        """
+        super().__init__(name, Frequency.WEEKLY, begn_date, descp)
+
+class TwiceWeeklyHabit(Habit):
+    """
+    Child Class that represents a habit that has to be completed twice every week.
+    """
+
+    PERIOD_DAYS = 7
+    REQUIRED_PER_PERIOD = 2
+
+    def __init__(self, name, begn_date=None, descp=None):
+        """
+        Function that initializes a new habit that needs to be completed twice a week
+
+        Arguments: 
+            name: the name of the habit, cannot be empty and cannot be changed once defined;
+            begn_date: date when the user wants to start tracking the habit, optional argument, if not defined defaults to the date the habit was created, can only be changed if there were no checks yet; 
+            descp: description of the habit, optional argument, can be changed at any time. 
+
+        Raises: 
+            ValueError: if name is empty or whitespace.
+            TypeError: if Frequency is not a Frequency(Enum) value.
+        """
+        super().__init__(name, Frequency.WEEKLY, begn_date, descp)
+
+class BiWeeklyHabit(Habit):
+    """
+    Child Class that represents a habit that has to be completed twice every week.
+    """
+
+    PERIOD_DAYS = 14
+    REQUIRED_PER_PERIOD = 1
+
+    def __init__(self, name, begn_date=None, descp=None):
+        """
+        Function that initializes a new habit that needs to be completed once every two weeks.
+
+        Arguments: 
+            name: the name of the habit, cannot be empty and cannot be changed once defined;
+            begn_date: date when the user wants to start tracking the habit, optional argument, if not defined defaults to the date the habit was created, can only be changed if there were no checks yet; 
+            descp: description of the habit, optional argument, can be changed at any time. 
+
+        Raises: 
+            ValueError: if name is empty or whitespace.
+            TypeError: if Frequency is not a Frequency(Enum) value.
+        """
+        super().__init__(name, Frequency.WEEKLY, begn_date, descp)
 
 
-class DailyHabit(Habit):
-    """Child Class that represents a bi-weekly habit"""
 
-    def __init__(self, name):
-        super().__init__(name = name,freq=Frequency.BIWEEKLY)
-
-#add date limitations for the notes and the check-ins can a user change the frequency on the same habit? 
 #criar os métodos: check habit late habit (different for each habit, delete habit, analyse habit, modidy habit)
 #Ligação à base de dados 
 #Separar em classes, database operations, UI, etc
