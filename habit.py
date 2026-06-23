@@ -138,10 +138,9 @@ class Habit:
             return False
 
         today = date.today()
-        completion_dates = [c.date() for c in self._completions]
         current_period_count = sum(
-            1 for d in completion_dates
-            if (today - d).days // self.PERIOD_DAYS == 0
+            1 for d in self._completions
+            if (today - d.date()).days // self.PERIOD_DAYS == 0
         )
         return current_period_count >= self.REQUIRED_PER_PERIOD
     
@@ -179,7 +178,7 @@ class Habit:
 
         Raises: 
             TypeError: if the check_datetime is not a datetime. 
-            ValueError: if check_datetime is before the habit's start_date.
+            ValueError: if check_datetime is before the habit's start_date or for a date in the future
         """
 
         if check_datetime is None: check_datetime = datetime.now()
@@ -189,6 +188,9 @@ class Habit:
         
         if check_datetime.date() < self.start_date:
             raise ValueError("Cannot record a completion before the habit's start date")
+        
+        if check_datetime.date() > date.today():
+            raise ValueError("Cannot record a completion in the future. ")
 
         # Only one completion per day so the comparison is done on a daily granularity. 
         already_checked = any(c.date() == check_datetime.date() for c in self._completions)
@@ -211,17 +213,21 @@ class Habit:
 
         Raises:
             TypeError: if check_datetime is not a datetime.
+            ValueError: if the date chosen is in the future.
         """
 
         if not isinstance(check_datetime, datetime):
             raise TypeError(f"The argument must be a datetime, got {type(check_datetime).__name__}")
+        
+        if check_datetime.date() > date.today():
+            raise ValueError("Cannot record a completion in the future. ")
 
         if self._grace_period(check_datetime.date()):
             return self.check_habit_completion(check_datetime)
         return False
         
     def add_note(self,
-                note_date: date,
+                note_date: datetime,
                 note: str) -> bool:
         """
         Function to allow the user to add notes to the habit. It can be used to add justifications for missing completion.
@@ -237,14 +243,17 @@ class Habit:
 
         Raises:
             TypeError: if note_date is not a date, or note is not a string.
-            ValueError: if note is empty or only whitespace or the note_date is before start_date.
+            ValueError: if note is empty or only whitespace or the note_date is before start_date, if note_date is in the future.
         """
 
         if not isinstance(note_date, date):
             raise TypeError(f"The argument must be a date, got {type(note_date).__name__}")
         
-        if note_date < self.start_date:
-            raise ValueError("Cannot add a note before the habit's start date")
+        if note_date.date() < self.start_date:
+            raise ValueError("Cannot add a note before the habit's start date.")
+        
+        if note_date.date() > date.today():
+            raise ValueError("Cannot add a note for a date in the future.")
         
         if not self._grace_period(note_date.date()):
             return False
@@ -255,7 +264,6 @@ class Habit:
         if not note.strip():
             raise ValueError("The note cannot be empty")
         
-        
         self.notes[note_date] = note
         return True
 
@@ -265,7 +273,7 @@ class Habit:
         have at least one completion.
 
         Returns:
-            The current streak length, in periods. 0 if no completions.
+            The current streak length, in periods. 0 if no completions are recorded.
         """
         
         if not self._completions:
@@ -292,7 +300,7 @@ class Habit:
         Function that returns the longest streak of consecutive periods this habit has ever achieved.
 
         Returns:
-            The longest streak length, in periods. 0 if no completions.
+            The longest streak length, in periods. 0 if no completions are recorded.
         """
         
         if not self._completions:
@@ -300,16 +308,25 @@ class Habit:
 
         completion_dates = [c.date() for c in self._completions]
 
-        # Convert each date into an absolute (not relative to today) "period number"
-        period_numbers = sorted(set(
+        # Count completions per period (relative to start_date)
+        period_counts = Counter(
             (d - self.start_date).days // self.PERIOD_DAYS for d in completion_dates
-        ))
+        )
+
+        # Only keep periods that met the requirement
+        satisfied_periods = sorted(
+            period for period, count in period_counts.items()
+            if count >= self.REQUIRED_PER_PERIOD
+        )
+
+        if not satisfied_periods:
+            return 0
 
         longest = 1
         current = 1
 
-        for i in range(1, len(period_numbers)):
-            if period_numbers[i] == period_numbers[i - 1] + 1:
+        for i in range(1, len(satisfied_periods)):
+            if satisfied_periods[i] == satisfied_periods[i - 1] + 1:
                 current += 1
                 longest = max(longest, current)
             else:
@@ -433,18 +450,4 @@ class BiWeeklyHabit(Habit):
             TypeError: if Frequency is not a Frequency(Enum) value.
         """
         super().__init__(name, Frequency.WEEKLY, begn_date, descp)
-
-
-
-#criar os métodos: check habit late habit (different for each habit, delete habit, analyse habit, modidy habit)
-#Ligação à base de dados 
-#Separar em classes, database operations, UI, etc
-#Criar a command-line interface 
-#clarify whether additional user interaction tools might be needed in the future
-#Plan for unit tests using unittest or pytest
-#Create dummy data 
-#Check requirements folder for more 
-
-obj = Habit("foo", freq=Frequency.DAILY)
-dobj = DailyHabit("foo")
 
