@@ -450,4 +450,3 @@ class BiWeeklyHabit(Habit):
             TypeError: if Frequency is not a Frequency(Enum) value.
         """
         super().__init__(name, Frequency.WEEKLY, begn_date, descp)
-
