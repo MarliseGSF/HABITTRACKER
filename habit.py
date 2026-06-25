@@ -39,15 +39,18 @@ class Habit:
 
         Raises: 
             ValueError: if name is empty or whitespace.
-            TypeError: if Frequency is not a Frequency(Enum) value.
+            TypeError: if name is not a string or Frequency is not a Frequency(Enum) value.
 
         """
         
         if not name or not name.strip():
             raise ValueError("The Habit must have a name.")
         
+        if not isinstance(name, str):
+            raise TypeError("The habit name must be a string.")
+        
         if not isinstance(freq, Frequency):
-            raise TypeError("The habit must be daily, weekly, twice a week, or bi-weekly")
+            raise TypeError("The habit must be daily, weekly, twice a week, or bi-weekly,")
         
         self._name = name
         self._frequency = freq

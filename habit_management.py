@@ -26,66 +26,46 @@ class HabitTracker:
         
         """
         return self._habits.copy()
+    
+    # --- Methods Definition ---
 
-"""
-class HabitTracker:
-    # --- Core methods ---
+    def create_new_habit(self, habit: Habit) -> bool:
+        """
+        Function to add a new habitto the tracker. 
 
-    def add_habit(self, habit: Habit) -> bool:
-        
-        Add a new habit to the tracker.
+        Arguments: 
+            habit: Habit object to be created.
 
-        Args:
-            habit: the Habit object to add.
-
-        Returns:
-            True if successfully added.
+        Returns: 
+            True if the habit was successfully created. 
+            False if the habit was not created.
 
         Raises:
             TypeError: if habit is not a Habit instance.
             ValueError: if a habit with the same name already exists.
+        """
         
         if not isinstance(habit, Habit):
-            raise TypeError("habit must be a Habit instance")
+            raise TypeError("The habit must be a Habit instance")
         if any(h.name.lower() == habit.name.lower() for h in self._habits):
             raise ValueError(f"A habit named '{habit.name}' already exists")
 
         self._habits.append(habit)
         return True
-
-    def get_habit_by_name(self, name: str) -> "Habit | None":
-        
-        Find a habit by name (case-insensitive).
-
-        Args:
-            name: the name to search for.
-
-        Returns:
-            The matching Habit, or None if not found.
-
-        Raises:
-            TypeError: if name is not a string.
-        
-        if not isinstance(name, str):
-            raise TypeError("name must be a string")
-
-        return next(
-            (h for h in self._habits if h.name.lower() == name.lower()),
-            None
-        )
-
+    
     def remove_habit(self, name: str) -> bool:
-        
-        Remove a habit from the tracker by name.
+        """
+        Function that deletes a habit and all of its records (including completions) from the habit tracker. 
 
-        Args:
-            name: the name of the habit to remove.
+        Arguments: 
+            name: the name of the habit that will be removed. 
 
-        Returns:
-            True if removed, False if not found.
+        Returns: 
+            True if the habit was successfully removed, false if the habit is not found.
 
-        Raises:
-            TypeError: if name is not a string.
+        Raises: 
+            TypeError: if the name of the habit is not a string.
+        """
         
         habit = self.get_habit_by_name(name)
         if habit:
@@ -93,41 +73,67 @@ class HabitTracker:
             return True
         return False
 
-    # --- Filter methods ---
+    # --- Filter Methods ---
 
-    def get_active_habits(self) -> list[Habit]:
+    def find_habit_by_name(self, name: str) -> "Habit | None":
+        """
+        Functions that allows the user to fetch a tracked habit by its name. The function is not case sensitive. 
+
+        Arguments: 
+            name: recorded name of the habit being called on. 
+
+        Returns: 
+            If the corresponding habit exists, it will be fetched, if not it will return None. 
+
+        Raises: 
+            TypeError: if the name is not a string. 
+        """
         
-        Return all habits that are currently active.
+        if not isinstance(name, str):
+            raise TypeError("The habit name must be a string")
 
-        Returns:
-            List of active Habit objects. Empty list if none.
-        
-        return [h for h in self._habits if h.is_active]
+        return next(
+            (h for h in self._habits if h.name.lower() == name.lower()),
+            None
+        )
 
-    def get_inactive_habits(self) -> list[Habit]:
-        
-        Return all habits that are currently inactive.
 
-        Returns:
-            List of inactive Habit objects. Empty list if none.
-        
-        return [h for h in self._habits if not h.is_active]
+    def get_habits_from_status(self, active: bool = True) -> list[Habit]:
+        """
+        Function that allows the user to get a list of all the habits that match the status condition (if a habit is or not active). 
 
-    def get_by_frequency(self, frequency: Frequency) -> list[Habit]:
-        
-        Return all habits matching a given frequency.
+        Arguments: 
+            active: if True indicates that the user wants to see active habits. 
+                    if False indicates that the user wants a list of inactive habits. 
+                    Defaults to True.
 
-        Args:
-            frequency: the Frequency enum value to filter by.
+        Returns: List of habits that match the status requested. Empty list if no habit that matches that status is found. 
 
-        Returns:
-            List of matching Habit objects. Empty list if none.
+        Raises: 
+            TypeError: if the active variable is not a boolean value.
+        """
+        if not isinstance(active, bool):
+            raise TypeError("The habit status must be a boolean variable.")
 
-        Raises:
-            TypeError: if frequency is not a Frequency enum value.
-        
+        return [h for h in self._habits if h.is_active == active]
+
+    def get_habits_by_frequency(self, frequency: Frequency) -> list[Habit]:
+        """
+        Function that allows the users to get all the habits that match a frequenct.
+
+        Arguments: 
+            frequency: the Frequency class that we want to filter on. 
+
+        Returns: 
+            List of all the habits that match the frequency chosen.
+            If no habit matches the chosen frequency returns None. 
+
+        Raises: 
+            TypeError: if frequency is not a Frequency enum value 
+        """
+ 
         if not isinstance(frequency, Frequency):
-            raise TypeError("frequency must be a Frequency enum value")
+            raise TypeError("The frequency must belong to the Frequency Cl")
 
         return [h for h in self._habits if h.frequency == frequency]
 
@@ -141,33 +147,3 @@ class HabitTracker:
 
     def __repr__(self) -> str:
         return f"HabitTracker(habits={self._habits!r})"
-"""
-"""
-tracker = HabitTracker()
-exercise = DailyHabit("Exercise")
-gym = TwiceWeeklyHabit("Gym")
-
-tracker.add_habit(exercise)
-tracker.add_habit(gym)
-tracker.add_habit(DailyHabit("Exercise"))  # ❌ raises ValueError — duplicate name
-
-print(tracker)                              # HabitTracker (2 habits: Exercise, Gym)
-print(tracker.get_by_frequency(Frequency.DAILY))   # [Exercise]
-print(tracker.get_active_habits())          # [Exercise, Gym]
-print(tracker.get_habit_by_name("gym"))     # TwiceWeeklyHabit — case insensitive
-print(tracker.remove_habit("Exercise"))     # True
-print(tracker.remove_habit("Yoga"))         # False — doesn't exist
-"""
-
-"""
-class HabitTracker:
-    def __init__(self)
-    def add_habit(self, habit)
-    def remove_habit(self, habit)
-    def get_all_habits(self)
-    def get_by_frequency(self, frequency)
-    def get_active_habits(self)
-    def get_habit_by_name(self, name)
-    def __str__
-    def __repr__
-"""
