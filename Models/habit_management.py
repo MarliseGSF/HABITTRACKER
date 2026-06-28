@@ -1,4 +1,4 @@
-from habit import Frequency, Habit
+from Models.habit import Frequency, Habit
 
 class HabitTracker: 
     """

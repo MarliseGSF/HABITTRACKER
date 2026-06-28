@@ -32,8 +32,18 @@ if not tracker.habits:
         tracker.add_habit(habit)
     save_all_habits(conn, tracker)
 
-# ... program runs ...
-
 # shutdown
+save_all_habits(conn, tracker)
+conn.close()
+
+
+# Deleting a habit — coordinates both layers:
+def handle_delete_habit(tracker, conn, name):
+    if tracker.remove_habit(name):       # 1. remove from memory
+        delete_habit(conn, name)         # 2. remove from database
+        return True
+    return False
+
+# Saving everything at shutdown:
 save_all_habits(conn, tracker)
 conn.close()

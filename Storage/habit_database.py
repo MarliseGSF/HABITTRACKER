@@ -1,8 +1,8 @@
 import sqlite3
 import os
 from datetime import datetime, date
-from habit import Frequency, Habit, DailyHabit, WeeklyHabit, BiWeeklyHabit, TwiceWeeklyHabit
-from habit_management import HabitTracker
+from Models.habit import Frequency, Habit, DailyHabit, WeeklyHabit, BiWeeklyHabit, TwiceWeeklyHabit
+from Models.habit_management import HabitTracker
 
 FREQUENCY_CLASS_MAP = {
     Frequency.DAILY.value:        DailyHabit,

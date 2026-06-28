@@ -1,6 +1,6 @@
 from datetime import date, datetime
 from functools import reduce
-from habit import Frequency, Habit
+from Models.habit import Frequency, Habit
 
 # --- Helper Methods Definition ---
 def _should_be_analysed(habits_list: Habit) -> bool:
