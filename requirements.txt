@@ -83,3 +83,21 @@ print(f"All completions: {gym.completions}")
 print(f"Is active: {gym.is_active}")
 print(f"Has started: {gym.habit_has_started}")
 print(gym)   # uses __str__
+
+
+"""
+tracker = HabitTracker()
+exercise = DailyHabit("Exercise")
+gym = TwiceWeeklyHabit("Gym")
+
+tracker.add_habit(exercise)
+tracker.add_habit(gym)
+tracker.add_habit(DailyHabit("Exercise"))  # ❌ raises ValueError — duplicate name
+
+print(tracker)                              # HabitTracker (2 habits: Exercise, Gym)
+print(tracker.get_by_frequency(Frequency.DAILY))   # [Exercise]
+print(tracker.get_active_habits())          # [Exercise, Gym]
+print(tracker.get_habit_by_name("gym"))     # TwiceWeeklyHabit — case insensitive
+print(tracker.remove_habit("Exercise"))     # True
+print(tracker.remove_habit("Yoga"))         # False — doesn't exist
+"""
