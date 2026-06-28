@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 from functools import reduce
 from habit import Frequency, Habit
 
@@ -15,6 +15,27 @@ def _should_be_analysed(habits_list: Habit) -> bool:
     periods_elapsed = (date.today() - habits_list.start_date).days // habits_list.PERIOD_DAYS
     return periods_elapsed >= 1
 
+
+def _time_bracket(dt: datetime) -> str:
+    """
+    Function tht classifies a datetime into a time-of-day bracket.
+
+    Arguments:
+        dt: the datetime to classify.
+
+    Returns:
+        One of: 'Morning', 'Afternoon', 'Evening', 'Night'.
+    """
+    hour = dt.hour
+
+    if 6 <= hour < 12:
+        return "Morning"
+    elif 12 <= hour < 18:
+        return "Afternoon"
+    elif 18 <= hour < 22:
+        return "Evening"
+    else:
+        return "Night"
 
 # --- Functions Definition ---
 
@@ -288,3 +309,114 @@ def get_completion_rates_by_frequency(habits_list: list[Habit], frequency: Frequ
     rates = list(map(get_completion_rate, matching))
 
     return round(reduce(lambda acc, r: acc + r, rates) / len(rates), 2)
+
+
+def get_most_common_completion_time(habit: Habit) -> str | None:
+    """
+    Function that returns the most common time-of-day bracket for a single habit's completions.
+
+    Time brackets:
+        Morning   → 06:00 to 11:59
+        Afternoon → 12:00 to 17:59
+        Evening   → 18:00 to 21:59
+        Night     → 22:00 to 05:59
+
+    Argumentss:
+        habit: the Habit object to analyse.
+
+    Returns:
+        The most common bracket as a string, or None if no completions exist or habit has not started.
+
+    Raises:
+        TypeError: if habit is not a Habit instance.
+    """
+    if not isinstance(habit, Habit):
+        raise TypeError("The habit must be a Habit instance")
+
+    if not habit.habit_has_started or not habit.completions:
+        return None
+
+    brackets = list(map(_time_bracket, habit.completions))
+
+    bracket_counts = reduce(
+        lambda counts, b: {**counts, b: counts.get(b, 0) + 1},
+        brackets,
+        {}
+    )
+
+    return max(bracket_counts, key=lambda b: bracket_counts[b])
+
+def get_completion_time_analysis(habits_list: list[Habit]) -> dict:
+    """
+    Function that analyses time-of-day completion patterns across all habits.
+
+    Returns both an overall most common bracket and a per-habit breakdown, for habits that have at least one completion.
+    Includes all the started habits, including inactive habits, with at least one completion for the per-habit breakdown and only active started habits in the overall analysis.
+
+    Time brackets:
+        Morning   → 06:00 to 11:59
+        Afternoon → 12:00 to 17:59
+        Evening   → 18:00 to 21:59
+        Night     → 22:00 to 05:59
+
+    Arguments:
+        habits_list: list of Habit objects to analyse.
+
+    Returns:
+        A dictionary with two keys:
+            "overall"   → most common bracket across all habits (str or None)
+            "per_habit" → dict mapping habit name to its most common bracket
+
+    Example:
+        {
+            "overall": "Morning",
+            "per_habit": {
+                "Exercise": "Morning",
+                "Gym": "Evening",
+                "Reading": "Night"
+            }
+        }
+    """
+    if not habits_list:
+        return {"overall": None, "per_habit": {}}
+
+    # per-habit: started habits with completions (active or inactive)
+    habits_for_per_habit = list(filter(
+        lambda h: h.habit_has_started and len(h.completions) > 0,
+        habits_list
+    ))
+
+    # overall: active AND started habits with completions
+    habits_for_overall = list(filter(
+        lambda h: h.habit_has_started and h.is_active and len(h.completions) > 0,
+        habits_list
+    ))
+
+    per_habit = dict(map(
+        lambda h: (h.name, get_most_common_completion_time(h)),
+        habits_for_per_habit
+    ))
+
+    all_completions = list(reduce(
+        lambda acc, h: acc + h.completions,
+        habits_for_overall,
+        []
+    ))
+
+    if not all_completions:
+        return {"overall": None, "per_habit": per_habit}
+
+    all_brackets = list(map(_time_bracket, all_completions))
+
+    overall_counts = reduce(
+        lambda counts, b: {**counts, b: counts.get(b, 0) + 1},
+        all_brackets,
+        {}
+    )
+
+    overall = max(overall_counts, key=lambda b: overall_counts[b])
+
+    return {
+        "overall": overall,
+        "per_habit": per_habit
+    }
