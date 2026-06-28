@@ -72,11 +72,14 @@ def create_sample_habits() -> list:
                 _make_datetime(completion_date, hour=7, minute=30)
             )
 
-    # add a note explaining one missed day
+    # add a note explaining one missed day - will fail due to being outside of the grace period
     exercise.add_note(
         four_weeks_ago + timedelta(days=3),
         "Missed due to illness."
     )
+
+    # Write directly (same as load_habits does):
+    exercise.notes[four_weeks_ago + timedelta(days=3)] = "Missed due to illness."
 
     # ── 2. Drink Water — DailyHabit ──────────────────────────────────────
     # Perfect streak — completed every single day.

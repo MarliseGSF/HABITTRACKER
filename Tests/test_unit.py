@@ -1,6 +1,6 @@
 import pytest
 import os
-from storage.database import init_db
+from Storage.habit_database import init_db
 
 @pytest.fixture
 def test_conn():
