@@ -55,7 +55,7 @@ class HabitTracker:
     
     def remove_habit(self, name: str) -> bool:
         """
-        Function that deletes a habit and all of its records (including completions) from the habit tracker. 
+        Function that deletes a habit from the habit tracker. 
 
         Arguments: 
             name: the name of the habit that will be removed. 
@@ -97,7 +97,6 @@ class HabitTracker:
             None
         )
 
-
     def get_habits_from_status(self, active: bool = True) -> list[Habit]:
         """
         Function that allows the user to get a list of all the habits that match the status condition (if a habit is or not active). 
@@ -133,7 +132,7 @@ class HabitTracker:
         """
  
         if not isinstance(frequency, Frequency):
-            raise TypeError("The frequency must belong to the Frequency Cl")
+            raise TypeError("The frequency must belong to the Frequency(Enum) Class.")
 
         return [h for h in self._habits if h.frequency == frequency]
 
