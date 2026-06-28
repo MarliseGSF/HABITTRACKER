@@ -156,6 +156,7 @@ class Habit:
     
     
 # --- Helper Methods Definition ---
+
     def _grace_period(self, check_date: date) -> bool: 
         """
         Function defines a grace period for the user to mark the habit as complete or add notes to it. 
@@ -174,7 +175,7 @@ class Habit:
         return days_since <= self.PERIOD_DAYS + grace_period
     
 
-    # --- Methods Definition ---
+# --- Methods Definition ---
 
     def check_habit_completion(self, 
                                check_datetime: datetime = None) -> bool: 
@@ -285,7 +286,7 @@ class Habit:
         have at least one completion.
 
         Returns:
-            The current streak length, in periods. 0 if no completions are recorded.
+            The current streak length, in periods. 0 if no completions are recorded or if the habit has not started yet.
         """
         if not self._completions:
             return 0
@@ -361,7 +362,7 @@ class Habit:
 
 
 
-    # --- Display Methods---
+# --- Display Methods---
 
     def __str__(self) -> str:
         return f"{self.name} ({self.frequency.value})"
@@ -371,6 +372,7 @@ class Habit:
         return f"Habit(name={self.name!r}, frequency={self.frequency})"        
 
 
+# --- Child Classes---
 
 class DailyHabit(Habit):
     """
@@ -444,7 +446,7 @@ class TwiceWeeklyHabit(Habit):
         """
         super().__init__(name, Frequency.WEEKLY, begn_date, descp)
 
-        
+
 
 class BiWeeklyHabit(Habit):
     """

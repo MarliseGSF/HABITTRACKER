@@ -2,12 +2,29 @@ from datetime import date
 from functools import reduce
 from habit import Frequency, Habit
 
+# --- Helper Methods Definition ---
+def _should_be_analysed(habits_list: Habit) -> bool:
+    """
+    A habit is worth analysing only if it is active, has started,
+    and at least one full period has passed since start_date.
+    """
+    if not habits_list.is_active:
+        return False
+    if not habits_list.has_started:
+        return False
+    periods_elapsed = (date.today() - habits_list.start_date).days // habits_list.PERIOD_DAYS
+    return periods_elapsed >= 1
+
+
+# --- Functions Definition ---
+
 def get_all_habits_list(habits_list: list[Habit]) -> list[Habit]: 
     """
-    Function that returns a list with all the habits tracked. 
+    Function that returns a list with all the habits. 
+    Includes inactive habits that have not started yet.
 
     Arguments: 
-        habits_list: list with all the Habit objects that are being tracked. 
+        habits_list: list with all the Habit objects.
 
     Returns: 
         Full habits list. 
@@ -18,6 +35,7 @@ def get_all_habits_list(habits_list: list[Habit]) -> list[Habit]:
 def get_habits_by_frequency(habits_list: list[Habit], frequency: Frequency) -> list[Habit]:
     """
     Function that returns all habits that have the chosen frequency. 
+    Includes inactive habits but excludes habits that have not started. 
 
     Arguments: 
         habits_list: list of all the Habits. 
@@ -33,25 +51,29 @@ def get_habits_by_frequency(habits_list: list[Habit], frequency: Frequency) -> l
     if not isinstance(frequency, Frequency):
         raise TypeError("The frequency must belong to the Frequency(Enum) Class.")
 
-    return list(filter(lambda h: h.frequency == frequency, habits_list))
+    return list(filter(lambda h: h.habit_has_started and h.frequency == frequency, habits_list))
 
 
 def get_longest_streak_all_habits(habits_list: list[Habit]) -> Habit | None:
     """
-    Function that takes into consideration all the habits (both active and inactive) and returns the one that has the longest streak.
+    Function that takes into consideration all active habits with at least one completion and returns the one that has the longest streak.
     
     Arguments:
-        habits: list of Habit objects to analyse.
+        habits_list: list of Habit objects to analyse.
 
     Returns:
         The Habit with the highest longest streak. Returns None if the list is empty.
     """
-    if not habits_list:
-        return None
+    analysable = list(filter(_should_be_analysed, habits_list))
 
+    if not analysable: 
+        return None
+    
     return reduce(
-        lambda best, current: current if current.get_longest_habit_streak() > best.get_longest_habit_streak() else best,
-        habits_list
+        lambda best, current:
+            current if current.get_longest_habit_streak() > best.get_longest_habit_streak()
+            else best,
+        analysable
     )
 
 
@@ -142,20 +164,22 @@ def get_completion_rate_over_last_n_periods(habit: Habit, n: int) -> float:
 def get_struggling_habits(habits_list: list[Habit]) -> list[Habit]:
     """
     Function that returns habits which the user is struggling to complete with the required consistency. 
-    A habit is defined as struggling (or in need of attention) if its current streak is zero (0). 
+    Excludes inactive habits, habits that have not started yet and habits where a full period has not passed yet and so we cannot judge the performance yet.
+
+    A habit is defined as struggling (or in need of attention) if its current streak is zero (0) and at least one full period has passed since its last completion or start date. 
 
     Arguments:
         habits_list: list of Habit objects to analyse.
 
     Returns:
-        List of habits with current streak of 0. Returns an empty list if none.
+        List of active and started habits with current streak of 0. Returns an empty list if none.
     """
-    return list(filter(lambda h: h.get_current_habit_streak() == 0, habits_list))
+    return list(filter(lambda h: _should_be_analysed(h) and h.get_current_habit_streak() == 0, habits_list))
 
 
 def get_habits_never_completed(habits_list: list[Habit]) -> list[Habit]:
     """
-    Function that returns active habits that have never been completed.
+    Function that returns active habits, that are past their start date and have never been completed.
 
     Arguments:
         habits_list: list of Habit objects to analyse.
@@ -163,12 +187,12 @@ def get_habits_never_completed(habits_list: list[Habit]) -> list[Habit]:
     Returns:
         List of habits with no completions. Empty list if none.
     """
-    return list(filter(lambda h: len(h.completions) == 0, habits_list))
+    return list(filter(lambda h: _should_be_analysed(h) and len(h.completions) == 0, habits_list))
 
 
 def get_most_consistent_habit(habits_list: list[Habit]) -> Habit | None:
     """
-    Function that returns the active habit with the highest completion rate since its start date.
+    Function that returns the started active habit with the highest completion rate since its start date.
 
     Arguments:
         habits_list: list of Habit objects to analyse.
@@ -176,20 +200,23 @@ def get_most_consistent_habit(habits_list: list[Habit]) -> Habit | None:
     Returns:
         The most consistent Habit, or None if list is empty.
     """
-    if not habits_list:
+    analysable = list(filter(_should_be_analysed, habits_list))
+
+    if not analysable:
         return None
 
     return reduce(
         lambda best, current:
             current if get_completion_rate(current) > get_completion_rate(best)
             else best,
-        habits_list
+        analysable
     )
 
 
 def get_oldest_habit(habits_list: list[Habit]) -> Habit | None:
     """
     Function that return the active habit with the earliest start date.
+    Excludes habits that have not started yet.
 
     Arguments:
         habits_list: list of Habit objects to analyse.
@@ -197,18 +224,22 @@ def get_oldest_habit(habits_list: list[Habit]) -> Habit | None:
     Returns:
         The oldest Habit, or None if list is empty.
     """
-    if not habits_list:
+    started = list(filter(lambda h: h.has_started, habits_list))
+
+    if not started:
         return None
 
     return reduce(
-        lambda oldest, current: current if current.start_date < oldest.start_date else oldest,
-        habits_list
+        lambda oldest, current:
+            current if current.start_date < oldest.start_date else oldest,
+        started
     )
 
 
 def get_newest_habit(habits_list: list[Habit]) -> Habit | None:
     """
     Function that returns the active habit with the most recent start date.
+    Excludes habits that have not started yet.
 
     Argumentss:
         habits_list: list of Habit objects to analyse.
@@ -216,18 +247,21 @@ def get_newest_habit(habits_list: list[Habit]) -> Habit | None:
     Returns:
         The newest Habit, or None if list is empty.
     """
-    if not habits_list:
+    started = list(filter(lambda h: h.has_started, habits_list))
+
+    if not started:
         return None
 
     return reduce(
-        lambda newest, current: current if current.start_date > newest.start_date else newest,
-        habits_list
+        lambda newest, current:
+            current if current.start_date < newest.start_date else newest,
+        started
     )
 
 
 def get_completion_rates_by_frequency(habits_list: list[Habit], frequency: Frequency) -> float:
     """
-    Function that return the average completion rate for habits of a given frequency.
+    Function that return the average completion rate for started and active habits of a given frequency.
 
     Argumentss:
         habits_list: list of Habit objects to analyse.
@@ -235,7 +269,7 @@ def get_completion_rates_by_frequency(habits_list: list[Habit], frequency: Frequ
 
     Returns:
         Average completion rate as float between 0.0 and 1.0.
-        Returns 0.0 if no habits match the frequency.
+        Returns 0.0 if no analysable habits match the frequency.
 
     Raises:
         TypeError: if frequency is not a Frequency enum value.
@@ -243,7 +277,10 @@ def get_completion_rates_by_frequency(habits_list: list[Habit], frequency: Frequ
     if not isinstance(frequency, Frequency):
         raise TypeError("The frequency must belong to the Frequency(Enum) Class.")
 
-    matching = get_habits_by_frequency(habits_list, frequency)
+    matching = list(filter(
+        lambda h: _should_be_analysed(h) and h.frequency == frequency,
+        habits_list
+    ))
 
     if not matching:
         return 0.0
