@@ -195,14 +195,14 @@ class Habit:
         """
         if check_datetime is None: check_datetime = datetime.now()
 
-        if not isinstance(check_datetime, date):
+        if not isinstance(check_datetime, datetime):
             raise TypeError(f"Wrong check_date format. Must be datetime, got {type(check_datetime).__name__}")
         
         if check_datetime.date() < self.start_date:
             raise ValueError("Cannot record a completion before the habit's start date")
         
         if check_datetime.date() > date.today():
-            raise ValueError("Cannot record a completion in the future. ")
+            raise ValueError("Cannot record a completion in the future.")
 
         # Only one completion per day so the comparison is done on a daily granularity. 
         already_checked = any(c.date() == check_datetime.date() for c in self._completions)
@@ -210,6 +210,7 @@ class Habit:
         if already_checked: return False
 
         self._completions.append(check_datetime)
+        self._completions.sort() 
         return True
 
 
