@@ -4,13 +4,13 @@ class HabitTracker:
     """
     Class that manages the Habit objects.
     """
-    
+
     def __init__(self): 
         """
         Function that initializes the habit tracker with a list of habits.
         """
-
         self._habits: list[Habit] = []
+
 
     # --- Properties Definition ---
 
@@ -26,6 +26,7 @@ class HabitTracker:
         
         """
         return self._habits.copy()
+    
     
     # --- Methods Definition ---
 
@@ -44,7 +45,6 @@ class HabitTracker:
             TypeError: if habit is not a Habit instance.
             ValueError: if a habit with the same name already exists.
         """
-        
         if not isinstance(habit, Habit):
             raise TypeError("The habit must be a Habit instance")
         if any(h.name.lower() == habit.name.lower() for h in self._habits):
@@ -52,6 +52,7 @@ class HabitTracker:
 
         self._habits.append(habit)
         return True
+    
     
     def remove_habit(self, name: str) -> bool:
         """
@@ -66,12 +67,12 @@ class HabitTracker:
         Raises: 
             TypeError: if the name of the habit is not a string.
         """
-        
         habit = self.get_habit_by_name(name)
         if habit:
             self._habits.remove(habit)
             return True
         return False
+    
 
     # --- Filter Methods ---
 
@@ -88,7 +89,6 @@ class HabitTracker:
         Raises: 
             TypeError: if the name is not a string. 
         """
-        
         if not isinstance(name, str):
             raise TypeError("The habit name must be a string")
 
@@ -96,6 +96,7 @@ class HabitTracker:
             (h for h in self._habits if h.name.lower() == name.lower()),
             None
         )
+    
 
     def get_habits_from_status(self, active: bool = True) -> list[Habit]:
         """
@@ -115,6 +116,7 @@ class HabitTracker:
             raise TypeError("The habit status must be a boolean variable.")
 
         return [h for h in self._habits if h.is_active == active]
+    
 
     def get_habits_by_frequency(self, frequency: Frequency) -> list[Habit]:
         """
@@ -130,11 +132,11 @@ class HabitTracker:
         Raises: 
             TypeError: if frequency is not a Frequency enum value 
         """
- 
         if not isinstance(frequency, Frequency):
             raise TypeError("The frequency must belong to the Frequency(Enum) Class.")
 
         return [h for h in self._habits if h.frequency == frequency]
+    
 
     # --- Display ---
 
@@ -143,6 +145,7 @@ class HabitTracker:
             return "HabitTracker (no habits)"
         habit_names = ", ".join(h.name for h in self._habits)
         return f"HabitTracker ({len(self._habits)} habits: {habit_names})"
+    
 
     def __repr__(self) -> str:
         return f"HabitTracker(habits={self._habits!r})"

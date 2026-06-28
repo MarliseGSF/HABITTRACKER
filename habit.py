@@ -14,6 +14,7 @@ class Frequency(Enum):
     BIWEEKLY = "bi-weekly"
 
 
+
 class Habit:
     """
     Class that represents a habit with a name, frequency, and completion history.
@@ -42,7 +43,6 @@ class Habit:
             TypeError: if name is not a string or Frequency is not a Frequency(Enum) value.
 
         """
-        
         if not name or not name.strip():
             raise ValueError("The Habit must have a name.")
         
@@ -60,24 +60,30 @@ class Habit:
         self._completions: list[datetime] = []
         self._manually_paused: bool = False
         self.notes: dict[date, str] = {}
+        
 
     # --- Properties Definition ---
+
 
     @property #Blocks the name field from being altered. 
     def name(self) -> str: 
         return self._name
     
+    
     @property #Blocks the frequency field from being altered. 
     def frequency(self) -> Frequency: 
         return self._frequency
     
+    
     @property #Conditional block on the created_date field.
     def created_date(self) -> date: 
         return self._created_date
+    
 
     @property #Conditional block on the start_date field.
     def start_date(self) -> date: 
         return self._start_date
+    
     
     @start_date.setter
     def start_date(self, value: date) -> None: 
@@ -88,7 +94,6 @@ class Habit:
             TypeError: if value is not a date.
             Value Error: if completions already exist. 
         """
-
         if not isinstance(value, date):
             raise TypeError("The value must be a date.")
         
@@ -96,6 +101,7 @@ class Habit:
             raise ValueError("The start date cannot be changed after completions have already been recorded.")
         
         self._start_date = value
+
     
     @property #Flag that verifies if an habit has started yet. 
     def habit_has_started(self) -> bool: 
@@ -104,9 +110,11 @@ class Habit:
         """
         return date.today() >= self.start_date
     
+    
     @property #Read-only block on the completion history in order to prevent changes.
     def completions(self) -> list[datetime]:
         return self._completions.copy()
+    
     
     @property #Flag to check if a habit is active
     def is_active(self) -> bool:
@@ -118,7 +126,6 @@ class Habit:
             - has not been abandoned. 
         A habit is considered abandoned if it has no completions for two times the length of its grace period. 
         """
-
         if not self.habit_has_started: 
             return False
         if self._manually_paused: 
@@ -131,12 +138,12 @@ class Habit:
         abandonment_threshold = 2 * ((self.PERIOD_DAYS / 2) + 2)
         return days_since <= abandonment_threshold
     
+    
     @property
     def is_habit_completed_for_current_period(self) -> bool:
         """
         Function that defines if all the required completions per period have been satisfied.
         """
-    
         if not self._completions:
             return False
 
@@ -146,6 +153,7 @@ class Habit:
             if (today - d.date()).days // self.PERIOD_DAYS == 0
         )
         return current_period_count >= self.REQUIRED_PER_PERIOD
+    
     
 # --- Helper Methods Definition ---
     def _grace_period(self, check_date: date) -> bool: 
@@ -164,6 +172,7 @@ class Habit:
         days_since = (date.today() - check_date).days
         grace_period = (self.PERIOD_DAYS / 2) + 2
         return days_since <= self.PERIOD_DAYS + grace_period
+    
 
     # --- Methods Definition ---
 
@@ -183,7 +192,6 @@ class Habit:
             TypeError: if the check_datetime is not a datetime. 
             ValueError: if check_datetime is before the habit's start_date or for a date in the future
         """
-
         if check_datetime is None: check_datetime = datetime.now()
 
         if not isinstance(check_datetime, date):
@@ -203,6 +211,7 @@ class Habit:
         self._completions.append(check_datetime)
         return True
 
+
     def late_complete(self, check_datetime: datetime) -> bool:
         """
         Function that allows the user to retroactively mark a missed date as complete, if still within 
@@ -218,7 +227,6 @@ class Habit:
             TypeError: if check_datetime is not a datetime.
             ValueError: if the date chosen is in the future.
         """
-
         if not isinstance(check_datetime, datetime):
             raise TypeError(f"The argument must be a datetime, got {type(check_datetime).__name__}")
         
@@ -228,6 +236,7 @@ class Habit:
         if self._grace_period(check_datetime.date()):
             return self.check_habit_completion(check_datetime)
         return False
+    
         
     def add_note(self,
                 note_date: datetime,
@@ -248,7 +257,6 @@ class Habit:
             TypeError: if note_date is not a date, or note is not a string.
             ValueError: if note is empty or only whitespace or the note_date is before start_date, if note_date is in the future.
         """
-
         if not isinstance(note_date, date):
             raise TypeError(f"The argument must be a date, got {type(note_date).__name__}")
         
@@ -269,6 +277,7 @@ class Habit:
         
         self.notes[note_date] = note
         return True
+    
 
     def get_current_habit_streak(self) -> int:
         """
@@ -278,7 +287,6 @@ class Habit:
         Returns:
             The current streak length, in periods. 0 if no completions are recorded.
         """
-        
         if not self._completions:
             return 0
 
@@ -297,6 +305,7 @@ class Habit:
             period += 1
 
         return streak
+    
 
     def get_longest_habit_streak(self) -> int:
         """
@@ -305,7 +314,6 @@ class Habit:
         Returns:
             The longest streak length, in periods. 0 if no completions are recorded.
         """
-        
         if not self._completions:
             return 0
 
@@ -337,19 +345,20 @@ class Habit:
 
         return longest
     
+    
     def deactivate_habit(self) -> None:
         """
         Function to allow the user to deactivate an habit without deleting its history.
         """
-        
         self._manually_paused = False
+
 
     def reactivate_habit(self) -> None:
         """
         Function to allow the user to reactivate an habit.
         """
-        
         self._manually_paused = True
+
 
 
     # --- Display Methods---
@@ -357,8 +366,10 @@ class Habit:
     def __str__(self) -> str:
         return f"{self.name} ({self.frequency.value})"
     
+
     def __repr__(self) -> str:
         return f"Habit(name={self.name!r}, frequency={self.frequency})"        
+
 
 
 class DailyHabit(Habit):
@@ -408,6 +419,8 @@ class WeeklyHabit(Habit):
         """
         super().__init__(name, Frequency.WEEKLY, begn_date, descp)
 
+
+
 class TwiceWeeklyHabit(Habit):
     """
     Child Class that represents a habit that has to be completed twice every week.
@@ -430,6 +443,8 @@ class TwiceWeeklyHabit(Habit):
             TypeError: if Frequency is not a Frequency(Enum) value.
         """
         super().__init__(name, Frequency.WEEKLY, begn_date, descp)
+
+        
 
 class BiWeeklyHabit(Habit):
     """
