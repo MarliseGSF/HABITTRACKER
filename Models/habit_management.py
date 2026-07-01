@@ -32,7 +32,7 @@ class HabitTracker:
 
     def create_new_habit(self, habit: Habit) -> bool:
         """
-        Function to add a new habitto the tracker. 
+        Function to add a new habit to the tracker. 
 
         Arguments: 
             habit: Habit object to be created.
@@ -67,7 +67,7 @@ class HabitTracker:
         Raises: 
             TypeError: if the name of the habit is not a string.
         """
-        habit = self.get_habit_by_name(name)
+        habit = self.find_habit_by_name(name)
         if habit:
             self._habits.remove(habit)
             return True

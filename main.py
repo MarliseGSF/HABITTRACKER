@@ -1,49 +1,427 @@
-#Shouldthis be the CLI layer? If so add here not a date catch and habit completion information
+import os
+import Storage.habit_database as st
+import Analytics.habit_analyse as an
+from datetime import datetime, date
+from Storage.sample_data import create_sample_habits
+from Models.habit import DailyHabit, WeeklyHabit, BiWeeklyHabit, TwiceWeeklyHabit, Frequency
+from Models.habit_management import HabitTracker
 
-# main.py — coordinates both layers:
-def handle_remove_habit(tracker, conn, name):
-    if tracker.remove_habit(name):        # 1. remove from memory
-        delete_habit_from_db(conn, name)  # 2. remove from database
-        print(f"'{name}' removed.")
+def startup() -> tuple:
+    """
+    Function to initialise the database and load the habits.
+    If the database is empty it seeds the sample data. 
+    
+    Returns:
+        A tuple of (conn, tracker) — the open database connection and the populated HabitTracker.
+    """
+    conn = init_db()
+    tracker = st.load_habits(conn)
+
+    if not tracker.habits:
+        print("No habits found — loading sample data...")
+        for habit in create_sample_habits():
+            tracker.create_new_habit(habit)
+        st.save_all_habits(conn, tracker)
+        print("Sample data loaded.\n")
+
+    return conn, tracker
+
+
+def shutdown(conn, tracker) -> None:
+    """
+    Function that saves all habits and closes the database connection.
+
+    Argumentss:
+        conn: open database connection.
+        tracker: the HabitTracker to save.
+    """
+    st.save_all_habits(conn, tracker)
+    conn.close()
+    print("\nAll habits saved. Goodbye!")
+
+
+# --- Display Function Definition ---
+
+def clear_screen() -> None:
+    """
+    Function that clears the terminal screen.
+
+    Arguments:
+        conn: open database connection.
+        tracker: the HabitTracker to save.
+    """
+    os.system("cls" if os.name == "nt" else "clear")
+
+
+def print_header(title: str) -> None:
+    """
+    Function to print a formatted section header.
+    """
+    print(f"\n{'═' * 40}")
+    print(f"  {title}")
+    print(f"{'═' * 40}\n")
+
+
+def print_habit_summary(habit) -> None:
+    """
+    Function that prints a single habit's key information.
+    """
+    status = "Active" if habit.is_active else "Paused"
+    started = "Started" if habit.habit_has_started else "Not started yet"
+    print(f"  {habit.name}")
+    print(f"    Frequency : {habit.frequency.value}")
+    print(f"    Status    : {status} ({started})")
+    print(f"    Streak    : {habit.get_current_habit_streak()} periods")
+    if habit.description:
+        print(f"    Description     : {habit.description}")
+    print()
+
+
+def get_valid_input(prompt: str, valid_options: list) -> str:
+    """
+    Function that prompts the user  until the user enters a valid option.
+
+    Arguments:
+        prompt: the input prompt to display.
+        valid_options: list of accepted input strings.
+
+    Returns:
+        The validated user input.
+    """
+    while True:
+        choice = input(prompt).strip()
+        if choice in valid_options:
+            return choice
+        print(f"Invalid option. Please choose from {valid_options}")
+
+
+# --- Analytics Helper Functions ---
+
+def _show_by_frequency(tracker: HabitTracker) -> None:
+    """
+    Function that displays habits grouped by frequency.
+    """
+    print_header("Habits by Frequency")
+    for freq in Frequency:
+        habits = HabitTracker.get_habits_by_frequency(tracker.habits, freq)
+        if habits:
+            print(f"  {freq.value.upper()}:")
+            for h in habits:
+                print(f"    → {h.name}")
+            print()
+
+
+def _show_longest_streak(tracker: HabitTracker) -> None:
+    """
+    Function that displays the habit with the longest streak.
+    """
+    print_header("Longest Streak")
+    best = an.get_longest_streak_all_habits(tracker.habits)
+    if best:
+        print(f"{best.name} → {best.get_longest_streak()} periods")
     else:
-        print(f"No habit named '{name}' found.")
+        print("No data yet.")
 
-# main.py
-def handle_delete_habit(tracker: HabitTracker, conn: sqlite3.Connection, name: str) -> bool:
+
+def _show_struggling(tracker: HabitTracker) -> None:
     """
-    Remove a habit from both memory and database in one operation.
-    This is the function the CLI calls — user only needs to trigger this once.
+    Function that displays the habits with no current completion (the current streak is null).
     """
-    if tracker.remove_habit(name):           # 1. remove from memory
-        delete_habit_from_db(conn, name)     # 2. remove from database
-        return True
-    return False
-
-from storage.database import init_db, load_habits, save_all_habits, delete_habit
-from models.tracker import HabitTracker
-
-# startup
-conn = init_db("habits.db")
-tracker = load_habits(conn)
-
-if not tracker.habits:
-    from storage.sample_data import create_sample_habits
-    for habit in create_sample_habits():
-        tracker.add_habit(habit)
-    save_all_habits(conn, tracker)
-
-# shutdown
-save_all_habits(conn, tracker)
-conn.close()
+    print_header("Struggling Habits")
+    struggling = an.get_struggling_habits(tracker.habits)
+    if struggling:
+        for h in struggling:
+            print(f"  → {h.name} (best streak: {h.get_longest_streak()} periods)")
+    else:
+        print("No struggling habits — good job!")
 
 
-# Deleting a habit — coordinates both layers:
-def handle_delete_habit(tracker, conn, name):
-    if tracker.remove_habit(name):       # 1. remove from memory
-        delete_habit(conn, name)         # 2. remove from database
-        return True
-    return False
+def _show_most_consistent(tracker: HabitTracker) -> None:
+    """
+    Function to display the most consistently completed habit.
+    """
+    print_header("Most Consistent Habit")
+    best = an.get_most_consistent_habit(tracker.habits)
+    if best:
+        print(f"The habit {best.name} is the one being achieved most consistently.")
+    else:
+        print("No data yet.")
 
-# Saving everything at shutdown:
-save_all_habits(conn, tracker)
-conn.close()
+
+def _show_time_analysis(tracker: HabitTracker) -> None:
+    """
+    Function that displays completion time-of-day analysis.
+    """
+    print_header("Completion Time Analysis")
+    analysis = an.get_completion_time_analysis(tracker.habits)
+    print(f"Overall most common time: {analysis['overall'] or 'No data'}\n")
+    print("Per habit:")
+    for habit_name, bracket in analysis["per_habit"].items():
+        print(f"    {habit_name} → {bracket or 'No data'}")
+
+
+# --- Handler Function Definition ---
+
+def handle_view_habits(tracker: HabitTracker) -> None:
+    """
+    Function that displays all the habits and their current status.
+
+    Args:
+        tracker: the HabitTracker to save.
+    """
+    print_header("All Habits")
+
+    habits = an.get_all_habits_list(tracker.habits)
+    if not habits:
+        print("No habits found.")
+        return
+
+    for habit in habits:
+        print_habit_summary(habit)
+
+
+def handle_add_habit(conn, tracker: HabitTracker) -> None:
+    """
+    Function that guides the user through creating a new habit.
+    """
+    print_header("Add New Habit")
+
+    name = input("Habit name: ").strip()
+    if not name:
+        print("Name cannot be empty.")
+        return
+
+    print("\nFrequency options:")
+    print("  1. Daily")
+    print("  2. Twice weekly (twice every week)")
+    print("  3. Weekly")
+    print("  4. Bi-weekly (once every two weeks)")
+
+    freq_choice = get_valid_input(
+        "\nChoose frequency (1-4): ",
+        ["1", "2", "3", "4"]
+    )
+
+    description = input("Description (optional, press Enter to skip): ").strip()
+    description = description if description else None
+
+    start_input = input("Start date (YYYY-MM-DD, press Enter for today): ").strip()
+    if start_input:
+        try:
+            start_date = date.fromisoformat(start_input)
+        except ValueError:
+            print("Invalid date format — using today.")
+            start_date = None
+    else:
+        start_date = None
+
+    # map choice to child class
+    habit_classes = {
+        "1": DailyHabit,
+        "2": TwiceWeeklyHabit,
+        "3": WeeklyHabit,
+        "4": BiWeeklyHabit
+    }
+
+    HabitClass = habit_classes[freq_choice]
+
+    try:
+        habit = HabitClass(
+            name      = name,
+            begn_date = start_date,
+            descp     = description
+        )
+        tracker.create_new_habit(habit)
+        st.save_habit(conn, habit)
+
+        print(f"The habit '{name}' was successfully added")
+
+    except ValueError as e:
+        print(f"Could not add habit: {e}")
+
+
+def handle_complete_habit(conn, tracker: HabitTracker) -> None:
+    """
+    Function that marks the habit has having been completed.
+    """
+    print_header("Complete a Habit")
+
+    name = input("Habit name: ").strip()
+    habit = tracker.find_habit_by_name(name)
+
+    if habit is None:
+        print(f"No habit named '{name}' was found.")
+        return
+
+    if not habit.habit_has_started:
+        print(f"The habit '{name}' has not started yet (starts {habit.start_date}).")
+        return
+
+    result = habit.check_habit_completion(datetime.now())
+
+    if result:
+        print(f"'Habit {name}' marked complete for today!")
+        st.save_habit(conn, habit)
+    else:
+        print(f"Habit '{name}' was already completed today.")
+
+
+def handle_add_note(conn, tracker: HabitTracker) -> None:
+    """
+    Function to allow the user to add a note to a specific date. 
+    """
+    print_header("Add Note")
+
+    name = input("Habit name: ").strip()
+    habit = tracker.find_habit_by_name(name)
+
+    if habit is None:
+        print(f"No habit named '{name}' was found.")
+        return
+
+    date_input = input("Date for note (YYYY-MM-DD, Enter for today): ").strip()
+    if date_input:
+        try:
+            note_date = date.fromisoformat(date_input)
+        except ValueError:
+            print("Invalid date format.")
+            return
+    else:
+        note_date = date.today()
+
+    note = input("Note: ").strip()
+
+    result = habit.add_note(note_date, note)
+    if result:
+        print(f"Note added for the {note_date} completion.")
+        st.save_habit(conn, habit)
+    else:
+        print(f"Could not add note — date may be outside grace period.")
+
+
+def handle_delete_habit(conn, tracker: HabitTracker) -> None:
+    """
+    Function that deletes a habit and all its data from the database.
+    """
+    print_header("Delete Habit")
+
+    name = input("Habit name to delete: ").strip()
+    habit = tracker.find_habit_by_name(name)
+
+    if habit is None:
+        print(f"No habit named '{name}' was found.")
+        return
+
+    confirm = get_valid_input(
+        f"Are you sure you want to delete '{name}'? Please note that once deleted it is not possible to restore it. (y/n) ",
+        ["y", "n"]
+    )
+
+    if confirm == "y":
+        tracker.remove_habit(name)
+        st.delete_habit(conn, name)
+        print(f"The habit: '{name}' was permanently deleted.")
+    else:
+        print("Deletion cancelled.")
+
+
+def handle_pause_resume(conn, tracker: HabitTracker) -> None:
+    """
+    Function that allows the user to pause, and resume his/hers habits. 
+    """
+    print_header("Pause / Resume Habit")
+
+    name = input("Habit name: ").strip()
+    habit = tracker.find_habit_by_name(name)
+
+    if habit is None:
+        print(f"No habit named '{name}' was found.")
+        return
+
+    if habit._manually_paused:
+        habit.reactivate()
+        print(f"The habit '{name}' was resumed.")
+    else:
+        habit.deactivate()
+        print(f"The habit'{name}' was paused.")
+
+    st.save_habit(conn, habit)
+
+
+def handle_analytics(tracker: HabitTracker) -> None:
+    """
+    Function that creates a submenu with the different analysis position.
+    """
+    print_header("Analytics")
+
+    # options dict — label and action defined together
+    options = {
+        "1": ("Habits by Frequency",     lambda: _show_by_frequency(tracker)),
+        "2": ("Longest Streak",           lambda: _show_longest_streak(tracker)),
+        "3": ("Struggling Habits",        lambda: _show_struggling(tracker)),
+        "4": ("Most Consistent Habit",    lambda: _show_most_consistent(tracker)),
+        "5": ("Completion Time Analysis", lambda: _show_time_analysis(tracker)),
+        "6": ("Back to main menu",        lambda: None)
+    }
+
+    for key, (label, _) in options.items():
+        print(f"  {key}. {label}")
+
+    choice = get_valid_input(
+        "\n  Choose option (1-6): ",
+        list(options.keys())
+    )
+
+    _, action = options[choice]
+    action()
+
+
+# --- Main Loop Definition ---
+
+def main() -> None:
+    """
+    Main entry point. Handles startup, the interactive
+    menu loop, and shutdown.
+    """
+    clear_screen()
+    print_header("Welcome to Habit Tracker")
+
+    conn, tracker = startup()
+
+    # main menu options — same dispatch pattern as analytics
+    menu_options = {
+        "1": ("View all habits",       lambda: handle_view_habits(tracker)),
+        "2": ("Add a new habit",       lambda: handle_add_habit(conn, tracker)),
+        "3": ("Complete a habit",      lambda: handle_complete_habit(conn, tracker)),
+        "4": ("Add a note",            lambda: handle_add_note(conn, tracker)),
+        "5": ("Pause / Resume habit",  lambda: handle_pause_resume(conn, tracker)),
+        "6": ("Delete a habit",        lambda: handle_delete_habit(conn, tracker)),
+        "7": ("Analytics",             lambda: handle_analytics(tracker)),
+        "8": ("Exit",                  None)
+    }
+
+    while True:
+        print_header("Main Menu")
+        for key, (label, _) in menu_options.items():
+            print(f"  {key}. {label}")
+
+        choice = get_valid_input(
+            "\n  Choose option (1-8): ",
+            list(menu_options.keys())
+        )
+
+        clear_screen()
+
+        if choice == "8":
+            shutdown(conn, tracker)
+            break
+
+        _, action = menu_options[choice]
+        action()
+
+        input("\n  Press Enter to continue...")
+        clear_screen()
+
+
+if __name__ == "__main__":
+    main()
