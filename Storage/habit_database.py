@@ -11,7 +11,12 @@ FREQUENCY_CLASS_MAP = {
     Frequency.TWICEWEEKLY.value: TwiceWeeklyHabit
 }
 
-def init_db(db_path: str = "habits.db") -> sqlite3.Connection:
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DEFAULT_DB_PATH = os.path.normpath(
+    os.path.join(BASE_DIR, "..", "database", "habits.db")
+)
+
+def init_db(db_path: str = None) -> sqlite3.Connection:
     """
     Initialise the SQLite database and create tables if they don't already exist.
 
@@ -21,6 +26,8 @@ def init_db(db_path: str = "habits.db") -> sqlite3.Connection:
     Returns:
         An open sqlite3.Connection object.
     """
+    if db_path is None: db_path = DEFAULT_DB_PATH
+    
     os.makedirs(os.path.dirname(db_path), exist_ok=True)
 
     conn = sqlite3.connect(db_path)
