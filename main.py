@@ -14,7 +14,7 @@ def startup() -> tuple:
     Returns:
         A tuple of (conn, tracker) — the open database connection and the populated HabitTracker.
     """
-    conn = init_db()
+    conn = st.init_db()
     tracker = st.load_habits(conn)
 
     if not tracker.habits:
@@ -37,7 +37,7 @@ def shutdown(conn, tracker) -> None:
     """
     st.save_all_habits(conn, tracker)
     conn.close()
-    print("\nAll habits saved. Goodbye!")
+    print("All habits saved. Goodbye!")
 
 
 # --- Display Function Definition ---

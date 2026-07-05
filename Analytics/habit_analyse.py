@@ -5,12 +5,11 @@ from Models.habit import Frequency, Habit
 # --- Helper Methods Definition ---
 def _should_be_analysed(habits_list: Habit) -> bool:
     """
-    A habit is worth analysing only if it is active, has started,
-    and at least one full period has passed since start_date.
+    A habit is worth analysing only if it is active, has started, and at least one full period has passed since its start_date.
     """
     if not habits_list.is_active:
         return False
-    if not habits_list.has_started:
+    if not habits_list.habit_has_started:
         return False
     periods_elapsed = (date.today() - habits_list.start_date).days // habits_list.PERIOD_DAYS
     return periods_elapsed >= 1
@@ -138,7 +137,7 @@ def get_completion_rate(habit: Habit) -> float:
     )
 
     completed_periods = len(set(
-        (habit._to_date(c) - habit.start_date).days // habit.PERIOD_DAYS
+        (c.date() - habit.start_date).days // habit.PERIOD_DAYS
         for c in habit.completions
     ))
 
@@ -174,7 +173,7 @@ def get_completion_rate_over_last_n_periods(habit: Habit, n: int) -> float:
     completed_in_window = len(set(filter(
         lambda p: 0 <= p < n,
         map(
-            lambda c: (today - habit._to_date(c)).days // habit.PERIOD_DAYS,
+            lambda c: (today - c.date()).days // habit.PERIOD_DAYS,
             habit.completions
         )
     )))
@@ -245,7 +244,7 @@ def get_oldest_habit(habits_list: list[Habit]) -> Habit | None:
     Returns:
         The oldest Habit, or None if list is empty.
     """
-    started = list(filter(lambda h: h.has_started, habits_list))
+    started = list(filter(lambda h: h.habit_has_started, habits_list))
 
     if not started:
         return None
@@ -268,7 +267,7 @@ def get_newest_habit(habits_list: list[Habit]) -> Habit | None:
     Returns:
         The newest Habit, or None if list is empty.
     """
-    started = list(filter(lambda h: h.has_started, habits_list))
+    started = list(filter(lambda h: h.habit_has_started, habits_list))
 
     if not started:
         return None

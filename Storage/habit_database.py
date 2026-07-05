@@ -8,7 +8,7 @@ FREQUENCY_CLASS_MAP = {
     Frequency.DAILY.value:        DailyHabit,
     Frequency.WEEKLY.value:       WeeklyHabit,
     Frequency.BIWEEKLY.value:     BiWeeklyHabit,
-    Frequency.TWICE_WEEKLY.value: TwiceWeeklyHabit
+    Frequency.TWICEWEEKLY.value: TwiceWeeklyHabit
 }
 
 def init_db(db_path: str = "habits.db") -> sqlite3.Connection:
