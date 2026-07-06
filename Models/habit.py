@@ -167,7 +167,7 @@ class Habit:
         Raises:
             TypeError: if check_date is not a date.
         """
-        if not isinstance(check_date, datetime):
+        if not isinstance(check_date, date):
             raise TypeError(f"The argument must be a date, got {type(check_date).__name__}")
 
         days_since = (date.today() - check_date).days
@@ -262,13 +262,13 @@ class Habit:
         if not isinstance(note_date, date):
             raise TypeError(f"The argument must be a date, got {type(note_date).__name__}")
         
-        if note_date.date() < self.start_date:
+        if note_date < self.start_date:
             raise ValueError("Cannot add a note before the habit's start date.")
         
-        if note_date.date() > date.today():
+        if note_date > date.today():
             raise ValueError("Cannot add a note for a date in the future.")
         
-        if not self._grace_period(note_date.date()):
+        if not self._grace_period(note_date):
             return False
         
         if not isinstance(note, str):

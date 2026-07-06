@@ -69,11 +69,12 @@ def print_habit_summary(habit) -> None:
     status = "Active" if habit.is_active else "Paused"
     started = "Started" if habit.habit_has_started else "Not started yet"
     print(f"  {habit.name}")
-    print(f"    Frequency : {habit.frequency.value}")
-    print(f"    Status    : {status} ({started})")
-    print(f"    Streak    : {habit.get_current_habit_streak()} periods")
+    print(f"    Frequency      : {habit.frequency.value}")
+    print(f"    Status         : {status} ({started})")
+    print(f"    Start date     : ({habit.start_date})")
+    print(f"    Streak         : {habit.get_current_habit_streak()} periods")
     if habit.description:
-        print(f"    Description     : {habit.description}")
+        print(f"    Description    : {habit.description}")
     print()
 
 
@@ -291,12 +292,15 @@ def handle_add_note(conn, tracker: HabitTracker) -> None:
 
     note = input("Note: ").strip()
 
-    result = habit.add_note(note_date, note)
-    if result:
-        print(f"Note added for the {note_date} completion.")
-        st.save_habit(conn, habit)
-    else:
-        print(f"Could not add note — date may be outside grace period.")
+    try:
+        result = habit.add_note(note_date, note)
+        if result:
+            print(f"Note added for the {note_date} completion.")
+            st.save_habit(conn, habit)
+        else:
+            print(f"Could not add note — date may be outside grace period.")
+    except ValueError as e: 
+        print(f"{e}")
 
 
 def handle_delete_habit(conn, tracker: HabitTracker) -> None:
@@ -319,8 +323,11 @@ def handle_delete_habit(conn, tracker: HabitTracker) -> None:
 
     if confirm == "y":
         tracker.remove_habit(name)
-        st.delete_habit(conn, name)
-        print(f"The habit: '{name}' was permanently deleted.")
+        result = st.delete_habit(conn, name)
+        if result: 
+            print(f"The habit: '{name}' was permanently deleted.")
+        else: 
+            print(f"The habit '{name}' was deleted from the session but could not be deleted from the database and it may reappear on restart.")
     else:
         print("Deletion cancelled.")
 

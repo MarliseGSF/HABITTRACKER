@@ -178,6 +178,6 @@ def create_sample_habits() -> list:
     )
 
     # manually pause — reflects _manually_paused flag
-    meditation.deactivate()
+    meditation.deactivate_habit()
 
     return [exercise, drink_water, gym, review_finances, meditation]
