@@ -65,6 +65,9 @@ def print_header(title: str) -> None:
 def print_habit_summary(habit) -> None:
     """
     Function that prints a single habit's key information.
+
+    Argumnts: 
+        habit: the habit to be printed.
     """
     status = "Active" if habit.is_active else "Paused"
     started = "Started" if habit.habit_has_started else "Not started yet"
@@ -101,6 +104,9 @@ def get_valid_input(prompt: str, valid_options: list) -> str:
 def _show_by_frequency(tracker: HabitTracker) -> None:
     """
     Function that displays habits grouped by frequency.
+
+    Arguments: 
+        tracker: the HabitTracker.
     """
     print_header("Habits by Frequency")
     for freq in Frequency:
@@ -115,6 +121,9 @@ def _show_by_frequency(tracker: HabitTracker) -> None:
 def _show_longest_streak(tracker: HabitTracker) -> None:
     """
     Function that displays the habit with the longest streak.
+    
+    Arguments: 
+        tracker: the HabitTracker.
     """
     print_header("Longest Streak")
     best = an.get_longest_streak_all_habits(tracker.habits)
@@ -127,6 +136,9 @@ def _show_longest_streak(tracker: HabitTracker) -> None:
 def _show_struggling(tracker: HabitTracker) -> None:
     """
     Function that displays the habits with no current completion (the current streak is null).
+
+    Arguments: 
+        tracker: the HabitTracker.
     """
     print_header("Struggling Habits")
     struggling = an.get_struggling_habits(tracker.habits)
@@ -140,6 +152,9 @@ def _show_struggling(tracker: HabitTracker) -> None:
 def _show_most_consistent(tracker: HabitTracker) -> None:
     """
     Function to display the most consistently completed habit.
+
+    Arguments: 
+        tracker: the HabitTracker.
     """
     print_header("Most Consistent Habit")
     best = an.get_most_consistent_habit(tracker.habits)
@@ -152,6 +167,9 @@ def _show_most_consistent(tracker: HabitTracker) -> None:
 def _show_time_analysis(tracker: HabitTracker) -> None:
     """
     Function that displays completion time-of-day analysis.
+
+    Arguments: 
+        tracker: the HabitTracker.
     """
     print_header("Completion Time Analysis")
     analysis = an.get_completion_time_analysis(tracker.habits)
@@ -167,8 +185,8 @@ def handle_view_habits(tracker: HabitTracker) -> None:
     """
     Function that displays all the habits and their current status.
 
-    Args:
-        tracker: the HabitTracker to save.
+    Arguments:
+        tracker: the HabitTracker.
     """
     print_header("All Habits")
 
@@ -184,6 +202,10 @@ def handle_view_habits(tracker: HabitTracker) -> None:
 def handle_add_habit(conn, tracker: HabitTracker) -> None:
     """
     Function that guides the user through creating a new habit.
+
+    Arguments: 
+        conn: open database connection.
+        tracker: the HabitTracke to be added.
     """
     print_header("Add New Habit")
 
@@ -244,6 +266,10 @@ def handle_add_habit(conn, tracker: HabitTracker) -> None:
 def handle_complete_habit(conn, tracker: HabitTracker) -> None:
     """
     Function that marks the habit has having been completed.
+
+    Arguments: 
+        conn: open database connection.
+        tracker: the HabitTracker.
     """
     print_header("Complete a Habit")
 
@@ -270,6 +296,10 @@ def handle_complete_habit(conn, tracker: HabitTracker) -> None:
 def handle_add_note(conn, tracker: HabitTracker) -> None:
     """
     Function to allow the user to add a note to a specific date. 
+
+    Arguments: 
+        conn: open database connection.
+        tracker: the HabitTracker.
     """
     print_header("Add Note")
 
@@ -306,6 +336,10 @@ def handle_add_note(conn, tracker: HabitTracker) -> None:
 def handle_delete_habit(conn, tracker: HabitTracker) -> None:
     """
     Function that deletes a habit and all its data from the database.
+
+    Arguments: 
+        conn: open database connection.
+        tracker: the HabitTracker. 
     """
     print_header("Delete Habit")
 
@@ -335,6 +369,10 @@ def handle_delete_habit(conn, tracker: HabitTracker) -> None:
 def handle_pause_resume(conn, tracker: HabitTracker) -> None:
     """
     Function that allows the user to pause, and resume his/hers habits. 
+
+    Arguments: 
+        conn: open database connection.
+        tracker: the HabitTracker.
     """
     print_header("Pause / Resume Habit")
 
@@ -358,6 +396,9 @@ def handle_pause_resume(conn, tracker: HabitTracker) -> None:
 def handle_analytics(tracker: HabitTracker) -> None:
     """
     Function that creates a submenu with the different analysis position.
+
+    Arguments: 
+        tracker: the HabitTracker.
     """
     print_header("Analytics")
 

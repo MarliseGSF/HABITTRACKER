@@ -90,6 +90,9 @@ class Habit:
         """
         Function that allows the user to change the start date if habit has not been started yet. 
 
+        Arguments: 
+            value: date we want to start tracking the habit. 
+
         Raises: 
             TypeError: if value is not a date.
             Value Error: if completions already exist. 
@@ -219,7 +222,7 @@ class Habit:
         Function that allows the user to retroactively mark a missed date as complete, if still within 
         the grace period for this habit's frequency.
 
-        Args:
+        Arguments:
             check_datetime: the missed date/time to mark as complete.
 
         Returns:

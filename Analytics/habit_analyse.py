@@ -3,15 +3,22 @@ from functools import reduce
 from Models.habit import Frequency, Habit
 
 # --- Helper Methods Definition ---
-def _should_be_analysed(habits_list: Habit) -> bool:
+def _should_be_analysed(habit: Habit) -> bool:
     """
+    Helper function to identify if a habit should be analysed
     A habit is worth analysing only if it is active, has started, and at least one full period has passed since its start_date.
+
+    Arguments: 
+        habit: habit to be analysed. 
+
+    Returns: 
+        True if the habit fulfills the criteria to be analysed, false if it doesn't.
     """
-    if not habits_list.is_active:
+    if not habit.is_active:
         return False
-    if not habits_list.habit_has_started:
+    if not habit.habit_has_started:
         return False
-    periods_elapsed = (date.today() - habits_list.start_date).days // habits_list.PERIOD_DAYS
+    periods_elapsed = (date.today() - habit.start_date).days // habit.PERIOD_DAYS
     return periods_elapsed >= 1
 
 
