@@ -32,6 +32,25 @@ def startup() -> tuple:
         for habit in create_sample_habits():
             tracker.create_new_habit(habit)
 
+        """
+        for h in tracker.habits:
+            today = date.today()
+            completion_dates = [c.date() for c in h.completions]
+            print(f"DEBUG: {h.name}")
+            print(f"       start_date  = {h.start_date}")
+            print(f"       completions = {len(h.completions)}")
+            print(f"       streak      = {h.get_current_habit_streak()}")
+            print(f"    PERIOD_DAYS     : {h.PERIOD_DAYS}")
+            print(f"    last completion : {max(completion_dates) if completion_dates else 'none'}")
+            print(f"    first completion: {min(completion_dates) if completion_dates else 'none'}")
+            if completion_dates:
+                days_since_last = (today - max(completion_dates)).days
+                period = (today - max(completion_dates)).days // h.PERIOD_DAYS
+                print(f"    days since last : {days_since_last}")
+                print(f"    periods ago     : {period}")
+
+        """
+
         input("  Press Enter to continue...")
         return conn, tracker, True
 

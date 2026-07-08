@@ -303,8 +303,10 @@ class Habit:
             (today - d).days // self.PERIOD_DAYS for d in completion_dates
         )
 
+        start_period = 0 if period_counts.get(0, 0) >= self.REQUIRED_PER_PERIOD else 1
+
         streak = 0
-        period = 0
+        period = start_period
         while period_counts.get(period, 0) >= self.REQUIRED_PER_PERIOD:
             streak += 1
             period += 1
