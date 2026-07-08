@@ -57,7 +57,7 @@ def create_sample_habits() -> list:
     # Completed mostly in the morning.
 
     exercise = DailyHabit(
-        name      = "Exercise",
+        name      = "[Sample] Exercise",
         begn_date = four_weeks_ago,
         descp     = "30 minutes of exercise every day."
     )
@@ -86,7 +86,7 @@ def create_sample_habits() -> list:
     # Completed at varied times throughout the day.
 
     drink_water = DailyHabit(
-        name      = "Drink Water",
+        name      = "[Sample] Drink Water",
         begn_date = four_weeks_ago,
         descp     = "Drink at least 2 litres of water every day."
     )
@@ -107,7 +107,7 @@ def create_sample_habits() -> list:
     # Completed in the evening.
 
     gym = TwiceWeeklyHabit(
-        name      = "Gym",
+        name      = "[Sample] Gym",
         begn_date = four_weeks_ago,
         descp     = "Go to the gym twice a week."
     )
@@ -138,7 +138,7 @@ def create_sample_habits() -> list:
     # Completed on Sunday afternoons.
 
     review_finances = WeeklyHabit(
-        name      = "Review Finances",
+        name      = "[Sample] Review Finances",
         begn_date = four_weeks_ago,
         descp     = "Review budget and expenses every week."
     )
@@ -162,7 +162,7 @@ def create_sample_habits() -> list:
     # Currently paused.
 
     meditation = BiWeeklyHabit(
-        name      = "Meditation",
+        name      = "[Sample] Meditation",
         begn_date = four_weeks_ago,
         descp     = "Meditate at least once every two weeks."
     )

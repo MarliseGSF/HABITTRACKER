@@ -9,35 +9,87 @@ from Models.habit_management import HabitTracker
 def startup() -> tuple:
     """
     Function to initialise the database and load the habits.
-    If the database is empty it seeds the sample data. 
+    If the database is empty it loads the sample data into memory only. 
+    Note: sample data is never persisted.
     
     Returns:
-        A tuple of (conn, tracker) — the open database connection and the populated HabitTracker.
+        A tuple of (conn, tracker, is_sample_session): 
+            conn: the open database connection
+            tracker: the populated HabitTracker
+            is_sample_session: flag that is true if only sample data is loaded.
     """
     conn = st.init_db()
     tracker = st.load_habits(conn)
 
     if not tracker.habits:
-        print("No habits found — loading sample data...")
+        print("No saved habits found — loading sample data for demonstration purposes.")
+        print("─────────────────────────────────────────────")
+        print("PLEASE NOTE:")
+        print("Sample habits are loaded for demonstration only and will not be stored once you exited the session.")
+        print("Any additional habits added WILL be saved.")
+        print("─────────────────────────────────────────────\n")
+        
         for habit in create_sample_habits():
             tracker.create_new_habit(habit)
-        st.save_all_habits(conn, tracker)
-        print("Sample data loaded.\n")
 
-    return conn, tracker
+        input("  Press Enter to continue...")
+        return conn, tracker, True
+
+    return conn, tracker, False
 
 
-def shutdown(conn, tracker) -> None:
+def shutdown(conn, tracker: HabitTracker, is_sample: bool) -> None:
     """
-    Function that saves all habits and closes the database connection.
+    Function that saves all - except sample - habits and closes the database connection.
 
     Argumentss:
         conn: open database connection.
         tracker: the HabitTracker to save.
+        is_sample: true if the session was started by loading the sample data. 
     """
-    st.save_all_habits(conn, tracker)
+    if is_sample:
+        # separates real habits from sample habits
+        real_habits = [
+            h for h in tracker.habits
+            if not h.name.startswith("[Sample]")
+        ]
+        sample_habits = [
+            h for h in tracker.habits
+            if h.name.startswith("[Sample]")
+        ]
+
+        print("\n  ─────────────────────────────────────────────")
+        print("  SESSION SUMMARY")
+        print("  ─────────────────────────────────────────────")
+
+        if sample_habits:
+            print(f"\n {len(sample_habits)} sample habit(s) were NOT saved:")
+            for h in sample_habits:
+                print(f"      → {h.name}")
+
+        if real_habits:
+            print(f"\n {len(real_habits)} real habit(s) were saved:")
+            for h in real_habits:
+                print(f"      → {h.name}")
+            # save only real habits
+            for habit in real_habits:
+                st.save_habit(conn, habit)
+        else:
+            print("\n No real habits were added this session.")
+            print("  Sample data will reload on your next visit.")
+
+        print("  ─────────────────────────────────────────────")
+
+    else:
+        # normal session — save everything
+        saved = st.save_all_habits(conn, tracker)
+        if saved:
+            print(f"\n {len(tracker.habits)} habit(s) saved successfully.")
+        else:
+            print("\n Some habits may not have saved correctly.")
+
     conn.close()
-    print("All habits saved. Goodbye!")
+    print("\n End of Session Goodbye!\n")
 
 
 # --- Display Function Definition ---
@@ -428,13 +480,12 @@ def handle_analytics(tracker: HabitTracker) -> None:
 
 def main() -> None:
     """
-    Main entry point. Handles startup, the interactive
-    menu loop, and shutdown.
+    Main entry point. Handles startup, the interactive menu loop, and shutdown.
     """
     clear_screen()
     print_header("Welcome to Habit Tracker")
 
-    conn, tracker = startup()
+    conn, tracker, is_sample = startup()
 
     # main menu options — same dispatch pattern as analytics
     menu_options = {
@@ -450,6 +501,10 @@ def main() -> None:
 
     while True:
         print_header("Main Menu")
+
+        if is_sample: 
+            print("Sample data is not stored permanently. Real habits added will be saved.")
+
         for key, (label, _) in menu_options.items():
             print(f"  {key}. {label}")
 
