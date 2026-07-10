@@ -120,7 +120,7 @@ class HabitTracker:
 
     def get_habits_by_frequency(self, frequency: Frequency) -> list[Habit]:
         """
-        Function that allows the users to get all the habits that match a frequenct.
+        Function that allows the users to get all the habits that match a frequency.
 
         Arguments: 
             frequency: the Frequency class that we want to filter on. 

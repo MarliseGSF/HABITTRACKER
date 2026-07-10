@@ -114,12 +114,12 @@ def create_sample_habits() -> list:
 
     # (day_offset, hour) for each completion
     gym_completions = [
-        (1, 18),    # week 1 — two completions ✅
+        (1, 18),    # week 1 — two completions
         (4, 19),
-        (8, 18),    # week 2 — only one completion ❌
-        (15, 19),   # week 3 — two completions ✅
+        (8, 18),    # week 2 — only one completion
+        (15, 19),   # week 3 — two completions
         (18, 18),
-                    # week 4 — no completions ❌
+                    # week 4 — no completions
     ]
 
     for day_offset, hour in gym_completions:

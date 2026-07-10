@@ -450,13 +450,13 @@ class TwiceWeeklyHabit(Habit):
             ValueError: if name is empty or whitespace.
             TypeError: if Frequency is not a Frequency(Enum) value.
         """
-        super().__init__(name, Frequency.WEEKLY, begn_date, descp)
+        super().__init__(name, Frequency.TWICEWEEKLY, begn_date, descp)
 
 
 
 class BiWeeklyHabit(Habit):
     """
-    Child Class that represents a habit that has to be completed twice every week.
+    Child Class that represents a habit that has to be completed once every two week.
     """
 
     PERIOD_DAYS = 14
@@ -475,4 +475,4 @@ class BiWeeklyHabit(Habit):
             ValueError: if name is empty or whitespace.
             TypeError: if Frequency is not a Frequency(Enum) value.
         """
-        super().__init__(name, Frequency.WEEKLY, begn_date, descp)
+        super().__init__(name, Frequency.BIWEEKLY, begn_date, descp)
