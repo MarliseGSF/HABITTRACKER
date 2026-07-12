@@ -193,14 +193,14 @@ def create_sample_habits() -> list:
     )
 
     # only two completions, both in week 1
-    journaling._completions.append(
+    journaling.check_habit_completion(
         _make_datetime(four_weeks_ago + timedelta(days=1), hour=21)
     )
-    journaling._completions.append(
+    journaling.check_habit_completion(
         _make_datetime(four_weeks_ago + timedelta(days=2), hour=22)
     )
 
-    journaling.notes[four_weeks_ago + timedelta(days=10)] = (
+    journaling.add_note(four_weeks_ago + timedelta(days=10),
         "Haven't been keeping up with this habit."
     )
 

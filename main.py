@@ -52,7 +52,7 @@ def startup() -> tuple:
             """
 
 
-        input("  Press Enter to continue...")
+        input("Press Enter to continue...")
         return conn, tracker, True
 
     return conn, tracker, False
@@ -78,9 +78,9 @@ def shutdown(conn, tracker: HabitTracker, is_sample: bool) -> None:
             if h.name.startswith("[Sample]")
         ]
 
-        print("\n  ─────────────────────────────────────────────")
-        print("  SESSION SUMMARY")
-        print("  ─────────────────────────────────────────────")
+        print("\n─────────────────────────────────────────────")
+        print("SESSION SUMMARY")
+        print("─────────────────────────────────────────────")
 
         if sample_habits:
             print(f"\n {len(sample_habits)} sample habit(s) were NOT saved:")
@@ -95,21 +95,21 @@ def shutdown(conn, tracker: HabitTracker, is_sample: bool) -> None:
             for habit in real_habits:
                 st.save_habit(conn, habit)
         else:
-            print("\n No real habits were added this session.")
-            print("  Sample data will reload on your next visit.")
+            print("\nNo real habits were added this session.")
+            print("Sample data will reload on your next visit.")
 
-        print("  ─────────────────────────────────────────────")
+        print("─────────────────────────────────────────────")
 
     else:
         # normal session — save everything
         saved = st.save_all_habits(conn, tracker)
         if saved:
-            print(f"\n {len(tracker.habits)} habit(s) saved successfully.")
+            print(f"\n{len(tracker.habits)} habit(s) saved successfully.")
         else:
-            print("\n Some habits may not have saved correctly.")
+            print("\nSome habits may not have saved correctly.")
 
     conn.close()
-    print("\n End of Session\n")
+    print("\nEnd of Session\n")
 
 
 # --- Display Function Definition ---
@@ -148,6 +148,7 @@ def print_habit_summary(habit) -> None:
     print(f"    Status         : {status} ({started})")
     print(f"    Start date     : ({habit.start_date})")
     print(f"    Streak         : {habit.get_current_habit_streak()} periods")
+    print(f"    Completions    : {len(habit.completions)}")
     if habit.description:
         print(f"    Description    : {habit.description}")
     print()
@@ -216,7 +217,7 @@ def _show_struggling(tracker: HabitTracker) -> None:
     struggling = an.get_struggling_habits(tracker.habits)
     if struggling:
         for h in struggling:
-            print(f"  → {h.name} (best streak: {h.get_longest_habit_streak()} periods)")
+            print(f"→ {h.name} (best streak: {h.get_longest_habit_streak()} periods)")
     else:
         print("No struggling habits — good job!")
 
@@ -231,7 +232,7 @@ def _show_most_consistent(tracker: HabitTracker) -> None:
     print_header("Most Consistent Habit")
     best = an.get_most_consistent_habit(tracker.habits)
     if best:
-        print(f"The habit {best.name} is the one being achieved most consistently.")
+        print(f"The habit {best.name} is the habit being achieved most consistently.")
     else:
         print("No data yet.")
 
@@ -247,12 +248,75 @@ def _show_time_analysis(tracker: HabitTracker) -> None:
     analysis = an.get_completion_time_analysis(tracker.habits)
     overall = analysis['overall'] or 'No data'
     if overall and "/" in overall:
-        print(f"  Overall most common time: {overall} (tied)")
+        print(f"Overall most common time: {overall} (tied)")
     else:
-        print(f"  Overall most common time: {overall}")
+        print(f"Overall most common time (takes into account the number of completions): {overall}")
     print("Per habit:")
     for habit_name, bracket in analysis["per_habit"].items():
         print(f"    {habit_name} → {bracket or 'No data'}")
+
+def _show_oldest_habit(tracker: HabitTracker) -> None:
+    """
+    Function that displays the habit with the earliest start date.
+
+    Arguments: 
+        tracker: the HabitTracker.
+    """
+    print_header("Oldest Habit")
+    oldest = an.get_oldest_habit(tracker.habits)
+    if oldest:
+        print(f"Started on {oldest[0].start_date}:")
+        for h in oldest:
+            print(f"→ {h.name}")
+    else:
+        print("No data yet.")
+
+def _show_newest_habit(tracker: HabitTracker) -> None:
+    """
+    Function that displays the habit with the most recent start date.
+
+    Arguments: 
+        tracker: the HabitTracker.
+    """
+    print_header("Newest Habit")
+    newest = an.get_newest_habit(tracker.habits)
+    if newest:
+        print(f"Started on {newest[0].start_date}:")
+        for h in newest:
+            print(f"→ {h.name}")
+    else:
+        print("No data yet.")
+
+
+def _show_never_completed(tracker: HabitTracker) -> None:
+    """
+    Function that displays habits that do not have any completion.
+
+    Arguments: 
+        tracker: the HabitTracker.
+    """
+    print_header("Never Completed Habits")
+    never = an.get_habits_never_completed(tracker.habits)
+    if never:
+        for h in never:
+            print(f"→ {h.name} (started {h.start_date})")
+    else:
+        print("All habits have been completed at least once!")
+
+
+def _show_rate_by_frequency(tracker: HabitTracker) -> None:
+    """
+    Function that displays the average habit completion rate per frequency type.
+
+    Arguments: 
+        tracker: the HabitTracker.
+    """
+    print_header("Completion Rate by Frequency")
+    for freq in Frequency:
+        rate = an.get_completion_rates_by_frequency(tracker.habits, freq)
+        habits_of_type = an.get_habits_by_frequency(tracker.habits, freq)
+        if habits_of_type:
+            print(f"  {freq.value.upper()}: {rate * 100:.1f}%")
 
 
 def select_habit_from_list(tracker: HabitTracker) -> "Habit | None":
@@ -386,6 +450,53 @@ def handle_add_habit(conn, tracker: HabitTracker, is_sample: bool) -> None:
 
     except ValueError as e:
         print(f"Could not add habit: {e}")
+
+def handle_view_habit_details(conn, tracker: HabitTracker) -> None:
+    """
+    Function that displays all the information on a chosen habit.
+
+    Arguments: 
+        conn: open database connection.
+        tracker: the HabitTracker.
+    """
+    print_header("Habit Details")
+
+    habit = select_habit_from_list(tracker)
+    if habit is None:
+        return
+
+    status = "Active" if habit.is_active else "Paused"
+    started = "Started" if habit.habit_has_started else "Not started yet"
+    print(f"\n ══ {habit.name} ══")
+    print(f"\nGeneral")
+    print(f"Frequency    : {habit.frequency.value}")
+    print(f"Status       : {status} ({started})")
+    print(f"Created      : {habit.created_date}")
+    print(f"Start date   : {habit.start_date}")
+    if habit.description:
+        print(f"Description  : {habit.description}")
+
+    print(f"\nStreaks")
+    print(f"Current streak  : {habit.get_current_habit_streak()} periods")
+    print(f"Longest streak  : {habit.get_longest_habit_streak()} periods")
+
+    print(f"\nCompletions")
+    print(f"Total           : {len(habit.completions)}")
+
+    if habit.completions:
+        rate = an.get_completion_rate(habit)
+        print(f"Rate since start: {rate * 100:.1f}%")
+        usual_time = an.get_most_common_completion_time(habit)
+        print(f"Usual time      : {usual_time or 'No data'}")
+        print(f"Last completion : {max(c.date() for c in habit.completions)}")
+        print(f"First completion: {min(c.date() for c in habit.completions)}")
+
+    if habit.notes:
+        print(f"\nNotes")
+        for note_date, note_text in sorted(habit.notes.items()):
+            print(f"    {note_date}: {note_text}")
+    else:
+        print(f"\nNotes: None")
 
 
 def handle_complete_habit(conn, tracker: HabitTracker, is_sample: bool) -> None:
@@ -556,19 +667,23 @@ def handle_analytics(tracker: HabitTracker) -> None:
 
     # options dict — label and action defined together
     options = {
-        "1": ("Habits by Frequency",     lambda: _show_by_frequency(tracker)),
-        "2": ("Longest Streak",           lambda: _show_longest_streak(tracker)),
-        "3": ("Struggling Habits",        lambda: _show_struggling(tracker)),
-        "4": ("Most Consistent Habit",    lambda: _show_most_consistent(tracker)),
-        "5": ("Completion Time Analysis", lambda: _show_time_analysis(tracker)),
-        "6": ("Back to main menu",        lambda: None)
+        "1": ("Habits by Frequency",          lambda: _show_by_frequency(tracker)),
+        "2": ("Longest Streak",               lambda: _show_longest_streak(tracker)),
+        "3": ("Struggling Habits",            lambda: _show_struggling(tracker)),
+        "4": ("Most Consistent Habit",        lambda: _show_most_consistent(tracker)),
+        "5": ("Completion Time Analysis",     lambda: _show_time_analysis(tracker)),
+        "6": ("Oldest Habit",                 lambda: _show_oldest_habit(tracker)),      # ← new
+        "7": ("Newest Habit",                 lambda: _show_newest_habit(tracker)),      # ← new
+        "8": ("Never Completed Habits",       lambda: _show_never_completed(tracker)),   # ← new
+        "9": ("Completion Rate by Frequency", lambda: _show_rate_by_frequency(tracker)), # ← new
+        "10": ("Back to main menu",           lambda: None)
     }
 
     for key, (label, _) in options.items():
         print(f"  {key}. {label}")
 
     choice = get_valid_input(
-        "\n  Choose option (1-6): ",
+        "\n  Choose option (1-10): ",
         list(options.keys())
     )
 
@@ -642,6 +757,9 @@ def handle_modify_habit(conn, tracker: HabitTracker, is_sample) -> None:
         ).strip()
         try:
             new_date = date.fromisoformat(date_input)
+            if new_date < date.today():
+                print(f"\nStart date cannot be in the past.")
+                return
             habit.start_date = new_date
             
             if not habit.name.startswith("[Sample]"):
@@ -668,15 +786,16 @@ def main() -> None:
 
     # main menu options — same dispatch pattern as analytics
     menu_options = {
-        "1": ("View all habits",       lambda: handle_view_habits(tracker)),
-        "2": ("Add a new habit",       lambda: handle_add_habit(conn, tracker, is_sample)),
-        "3": ("Complete a habit",      lambda: handle_complete_habit(conn, tracker, is_sample)),
-        "4": ("Add a note",            lambda: handle_add_note(conn, tracker, is_sample)),
-        "5": ("Pause / Resume habit",  lambda: handle_pause_resume(conn, tracker, is_sample)),
-        "6": ("Modify a habit",        lambda: handle_modify_habit(conn, tracker, is_sample)),
-        "7": ("Delete a habit",        lambda: handle_delete_habit(conn, tracker)),
-        "8": ("Analytics",             lambda: handle_analytics(tracker)),
-        "9": ("Exit",                  None)
+        "1": (" View all habits",       lambda: handle_view_habits(tracker)),
+        "2": (" View habit details",    lambda: handle_view_habit_details(conn, tracker)),
+        "3": (" Add a new habit",       lambda: handle_add_habit(conn, tracker, is_sample)),
+        "4": (" Complete a habit",      lambda: handle_complete_habit(conn, tracker, is_sample)),
+        "5": (" Add a note",            lambda: handle_add_note(conn, tracker, is_sample)),
+        "6": (" Pause / Resume habit",  lambda: handle_pause_resume(conn, tracker, is_sample)),
+        "7": (" Modify a habit",        lambda: handle_modify_habit(conn, tracker, is_sample)),
+        "8": (" Delete a habit",        lambda: handle_delete_habit(conn, tracker)),
+        "9": (" Analytics",             lambda: handle_analytics(tracker)),
+        "10": ("Exit",                  None)
     }
 
     while True:
@@ -689,13 +808,13 @@ def main() -> None:
             print(f"  {key}. {label}")
 
         choice = get_valid_input(
-            "\n  Choose option (1-9): ",
+            "\n  Choose option (1-10): ",
             list(menu_options.keys())
         )
 
         clear_screen()
 
-        if choice == "9":
+        if choice == "10":
             shutdown(conn, tracker, is_sample)
             break
 

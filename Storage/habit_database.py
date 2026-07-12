@@ -246,7 +246,8 @@ def load_habits(conn: sqlite3.Connection) -> HabitTracker:
             habit = HabitClass(
                 name      = row["name"],
                 begn_date = date.fromisoformat(row["start_date"]),
-                descp     = row["description"]
+                descp     = row["description"],
+                _bypass_date_check = True
             )
 
             # ── Step 3: restore immutable fields ───────

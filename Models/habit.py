@@ -47,14 +47,14 @@ class Habit:
         if not name or not name.strip():
             raise ValueError("The Habit must have a name.")
         
+        if begn_date and begn_date < date.today() and not _bypass_date_check:
+            raise ValueError("Start date cannot be in the past.")
+        
         if not isinstance(name, str):
             raise TypeError("The habit name must be a string.")
         
         if not isinstance(freq, Frequency):
             raise TypeError("The habit must be daily, weekly, twice a week, or bi-weekly,")
-        
-        if begn_date and begn_date < date.today() and not _bypass_date_check:
-            raise ValueError("Start date cannot be in the past.")
         
         self._name = name
         self._frequency = freq
@@ -218,6 +218,8 @@ class Habit:
 
         self._completions.append(check_datetime)
         self._completions.sort() 
+        if self._manually_paused:
+            self._manually_paused = False
         return True
 
 
@@ -392,7 +394,7 @@ class DailyHabit(Habit):
     PERIOD_DAYS = 1
     REQUIRED_PER_PERIOD = 1
 
-    def __init__(self, name, begn_date=None, descp=None):
+    def __init__(self, name, begn_date=None, descp=None, _bypass_date_check: bool = False):
         """
         Function that initializes a new daily habit
 
@@ -405,7 +407,7 @@ class DailyHabit(Habit):
             ValueError: if name is empty or whitespace.
             TypeError: if Frequency is not a Frequency(Enum) value.
         """
-        super().__init__(name, Frequency.DAILY, begn_date, descp)
+        super().__init__(name, Frequency.DAILY, begn_date, descp, _bypass_date_check)
 
 
 class WeeklyHabit(Habit):
@@ -416,7 +418,7 @@ class WeeklyHabit(Habit):
     PERIOD_DAYS = 7
     REQUIRED_PER_PERIOD = 1
 
-    def __init__(self, name, begn_date=None, descp=None):
+    def __init__(self, name, begn_date=None, descp=None, _bypass_date_check: bool = False):
         """
         Function that initializes a new weekly habit
 
@@ -429,7 +431,7 @@ class WeeklyHabit(Habit):
             ValueError: if name is empty or whitespace.
             TypeError: if Frequency is not a Frequency(Enum) value.
         """
-        super().__init__(name, Frequency.WEEKLY, begn_date, descp)
+        super().__init__(name, Frequency.WEEKLY, begn_date, descp, _bypass_date_check)
 
 
 
@@ -441,7 +443,7 @@ class TwiceWeeklyHabit(Habit):
     PERIOD_DAYS = 7
     REQUIRED_PER_PERIOD = 2
 
-    def __init__(self, name, begn_date=None, descp=None):
+    def __init__(self, name, begn_date=None, descp=None, _bypass_date_check: bool = False):
         """
         Function that initializes a new habit that needs to be completed twice a week
 
@@ -454,7 +456,7 @@ class TwiceWeeklyHabit(Habit):
             ValueError: if name is empty or whitespace.
             TypeError: if Frequency is not a Frequency(Enum) value.
         """
-        super().__init__(name, Frequency.TWICEWEEKLY, begn_date, descp)
+        super().__init__(name, Frequency.TWICEWEEKLY, begn_date, descp, _bypass_date_check)
 
 
 
@@ -466,7 +468,7 @@ class BiWeeklyHabit(Habit):
     PERIOD_DAYS = 14
     REQUIRED_PER_PERIOD = 1
 
-    def __init__(self, name, begn_date=None, descp=None):
+    def __init__(self, name, begn_date=None, descp=None, _bypass_date_check: bool = False):
         """
         Function that initializes a new habit that needs to be completed once every two weeks.
 
@@ -479,4 +481,4 @@ class BiWeeklyHabit(Habit):
             ValueError: if name is empty or whitespace.
             TypeError: if Frequency is not a Frequency(Enum) value.
         """
-        super().__init__(name, Frequency.BIWEEKLY, begn_date, descp)
+        super().__init__(name, Frequency.BIWEEKLY, begn_date, descp, _bypass_date_check)

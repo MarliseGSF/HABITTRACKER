@@ -224,7 +224,7 @@ def get_completion_rate_over_last_n_periods(habit: Habit, n: int) -> float:
 def get_struggling_habits(habits_list: list[Habit]) -> list[Habit]:
     """
     Function that returns habits which the user is struggling to complete with the required consistency. 
-    Excludes inactive habits, habits that have not started yet and habits where a full period has not passed yet and so we cannot judge the performance yet.
+    Includes inactive habits but excludes habits that have not started yet and habits where a full period has not passed yet and so we cannot judge the performance yet.
 
     A habit is defined as struggling (or in need of attention) if its current streak is zero (0) and at least one full period has passed since its last completion or start date. 
 
@@ -234,7 +234,15 @@ def get_struggling_habits(habits_list: list[Habit]) -> list[Habit]:
     Returns:
         List of active and started habits with current streak of 0. Returns an empty list if none.
     """
-    return list(filter(lambda h: _should_be_analysed(h) and h.get_current_habit_streak() == 0, habits_list))
+    return list(filter(
+        lambda h: (
+            h.habit_has_started and
+            (date.today() - h.start_date).days // h.PERIOD_DAYS >= 1 and
+            h.get_current_habit_streak() == 0
+        ),
+        habits_list
+    ))
+    #return list(filter(lambda h: _should_be_analysed(h) and h.get_current_habit_streak() == 0, habits_list))
 
 
 def get_habits_never_completed(habits_list: list[Habit]) -> list[Habit]:
@@ -287,13 +295,15 @@ def get_oldest_habit(habits_list: list[Habit]) -> Habit | None:
     started = list(filter(lambda h: h.habit_has_started, habits_list))
 
     if not started:
-        return None
+        return []
 
-    return reduce(
-        lambda oldest, current:
-            current if current.start_date < oldest.start_date else oldest,
-        started
+    oldest_date = reduce(
+        lambda oldest, h: h.start_date if h.start_date < oldest else oldest,
+        started,
+        started[0].start_date
     )
+
+    return list(filter(lambda h: h.start_date == oldest_date, started))
 
 
 def get_newest_habit(habits_list: list[Habit]) -> Habit | None:
@@ -310,13 +320,15 @@ def get_newest_habit(habits_list: list[Habit]) -> Habit | None:
     started = list(filter(lambda h: h.habit_has_started, habits_list))
 
     if not started:
-        return None
+        return []
 
-    return reduce(
-        lambda newest, current:
-            current if current.start_date < newest.start_date else newest,
-        started
+    newest_date = reduce(
+        lambda newest, h: h.start_date if h.start_date > newest else newest,
+        started,
+        started[0].start_date
     )
+
+    return list(filter(lambda h: h.start_date == newest_date, started))
 
 
 def get_completion_rates_by_frequency(habits_list: list[Habit], frequency: Frequency) -> float:
@@ -375,15 +387,7 @@ def get_most_common_completion_time(habit: Habit) -> str | None:
     if not habit.habit_has_started or not habit.completions:
         return None
 
-    brackets = list(map(_time_bracket, habit.completions))
-
-    bracket_counts = reduce(
-        lambda counts, b: {**counts, b: counts.get(b, 0) + 1},
-        brackets,
-        {}
-    )
-
-    return max(bracket_counts, key=lambda b: bracket_counts[b])
+    return _get_overall_bracket(habit.completions) 
 
 def get_completion_time_analysis(habits_list: list[Habit]) -> dict:
     """
@@ -445,17 +449,7 @@ def get_completion_time_analysis(habits_list: list[Habit]) -> dict:
     if not all_completions:
         return {"overall": None, "per_habit": per_habit}
 
-    all_brackets = list(map(_time_bracket, all_completions))
-
-    overall_counts = reduce(
-        lambda counts, b: {**counts, b: counts.get(b, 0) + 1},
-        all_brackets,
-        {}
-    )
-
-    max_count = max(overall_counts.values())
-    tied = list(filter(lambda b: overall_counts[b] == max_count, overall_counts))
-    overall = "/".join(tied)
+    overall = _get_overall_bracket(all_completions)
 
     return {
         "overall": overall,
