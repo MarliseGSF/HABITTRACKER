@@ -667,15 +667,15 @@ def handle_analytics(tracker: HabitTracker) -> None:
 
     # options dict — label and action defined together
     options = {
-        "1": ("Habits by Frequency",          lambda: _show_by_frequency(tracker)),
-        "2": ("Longest Streak",               lambda: _show_longest_streak(tracker)),
-        "3": ("Struggling Habits",            lambda: _show_struggling(tracker)),
-        "4": ("Most Consistent Habit",        lambda: _show_most_consistent(tracker)),
-        "5": ("Completion Time Analysis",     lambda: _show_time_analysis(tracker)),
-        "6": ("Oldest Habit",                 lambda: _show_oldest_habit(tracker)),      # ← new
-        "7": ("Newest Habit",                 lambda: _show_newest_habit(tracker)),      # ← new
-        "8": ("Never Completed Habits",       lambda: _show_never_completed(tracker)),   # ← new
-        "9": ("Completion Rate by Frequency", lambda: _show_rate_by_frequency(tracker)), # ← new
+        "1": (" Habits by Frequency",          lambda: _show_by_frequency(tracker)),
+        "2": (" Longest Streak",               lambda: _show_longest_streak(tracker)),
+        "3": (" Struggling Habits",            lambda: _show_struggling(tracker)),
+        "4": (" Most Consistent Habit",        lambda: _show_most_consistent(tracker)),
+        "5": (" Completion Time Analysis",     lambda: _show_time_analysis(tracker)),
+        "6": (" Oldest Habit",                 lambda: _show_oldest_habit(tracker)),      # ← new
+        "7": (" Newest Habit",                 lambda: _show_newest_habit(tracker)),      # ← new
+        "8": (" Never Completed Habits",       lambda: _show_never_completed(tracker)),   # ← new
+        "9": (" Completion Rate by Frequency", lambda: _show_rate_by_frequency(tracker)), # ← new
         "10": ("Back to main menu",           lambda: None)
     }
 

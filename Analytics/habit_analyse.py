@@ -226,7 +226,9 @@ def get_struggling_habits(habits_list: list[Habit]) -> list[Habit]:
     Function that returns habits which the user is struggling to complete with the required consistency. 
     Includes inactive habits but excludes habits that have not started yet and habits where a full period has not passed yet and so we cannot judge the performance yet.
 
-    A habit is defined as struggling (or in need of attention) if its current streak is zero (0) and at least one full period has passed since its last completion or start date. 
+    A habit is defined as struggling (or in need of attention) if: 
+        - it is active and the current streak is zero (0)
+        - it is paused and the last completion exceeds the abandonment threshold
 
     Arguments:
         habits_list: list of Habit objects to analyse.
