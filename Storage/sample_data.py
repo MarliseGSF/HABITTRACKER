@@ -8,6 +8,7 @@ Habit patterns:
     Gym             → TwiceWeeklyHabit, inconsistent
     Review Finances → WeeklyHabit,      mostly consistent
     Meditation      → BiweeklyHabit,    struggling, currently paused
+    Journaling      -> DailyHabit,      struggling
 """
 
 from datetime import date, datetime, timedelta
@@ -46,6 +47,7 @@ def create_sample_habits() -> list:
         Review Finances → mostly consistent weekly habit
         Meditation      → struggling biweekly habit, currently paused
 
+
     Returns:
         A list of 5 Habit objects ready to be added to a HabitTracker and saved to the database.
     """
@@ -53,13 +55,13 @@ def create_sample_habits() -> list:
     four_weeks_ago = today - timedelta(weeks=4)
 
     # ── 1. Exercise — DailyHabit ─────────────────────────────────────────
-    # Strong streak with a few missed days scattered throughout.
-    # Completed mostly in the morning.
+    # Strong streak with a few missed days scattered throughout. Completed mostly in the morning.
 
     exercise = DailyHabit(
         name      = "[Sample] Exercise",
         begn_date = four_weeks_ago,
-        descp     = "30 minutes of exercise every day."
+        descp     = "30 minutes of exercise every day.",
+        _bypass_date_check = True   
     )
 
     # days to SKIP (missed) — day offsets from four_weeks_ago
@@ -82,13 +84,13 @@ def create_sample_habits() -> list:
     exercise.notes[four_weeks_ago + timedelta(days=3)] = "Missed due to illness."
 
     # ── 2. Drink Water — DailyHabit ──────────────────────────────────────
-    # Perfect streak — completed every single day.
-    # Completed at varied times throughout the day.
+    # Perfect streak — completed every single day. Completed at varied times throughout the day.
 
     drink_water = DailyHabit(
         name      = "[Sample] Drink Water",
         begn_date = four_weeks_ago,
-        descp     = "Drink at least 2 litres of water every day."
+        descp     = "Drink at least 2 litres of water every day.",
+        _bypass_date_check = True   
     )
 
     completion_times = [9, 10, 8, 11, 9, 10, 8,    # week 1
@@ -103,13 +105,13 @@ def create_sample_habits() -> list:
         )
 
     # ── 3. Gym — TwiceWeeklyHabit ────────────────────────────────────────
-    # Inconsistent — some weeks completed twice, some only once or not at all.
-    # Completed in the evening.
+    # Inconsistent — some weeks completed twice, some only once or not at all. Completed in the evening.
 
     gym = TwiceWeeklyHabit(
         name      = "[Sample] Gym",
         begn_date = four_weeks_ago,
-        descp     = "Go to the gym twice a week."
+        descp     = "Go to the gym twice a week.",
+        _bypass_date_check = True   
     )
 
     # (day_offset, hour) for each completion
@@ -134,13 +136,13 @@ def create_sample_habits() -> list:
     )
 
     # ── 4. Review Finances — WeeklyHabit ─────────────────────────────────
-    # Mostly consistent — completed 3 out of 4 weeks.
-    # Completed on Sunday afternoons.
+    # Mostly consistent — completed 3 out of 4 weeks. Completed on Sunday afternoons.
 
     review_finances = WeeklyHabit(
         name      = "[Sample] Review Finances",
         begn_date = four_weeks_ago,
-        descp     = "Review budget and expenses every week."
+        descp     = "Review budget and expenses every week.",
+        _bypass_date_check = True
     )
 
     # completed on day 6 (Sunday), 13, skipped week 3, completed day 27
@@ -158,13 +160,13 @@ def create_sample_habits() -> list:
     )
 
     # ── 5. Meditation — BiWeeklyHabit ────────────────────────────────────
-    # Struggling — only completed once in 4 weeks.
-    # Currently paused.
+    # Struggling — only completed once in 4 weeks. Currently paused.
 
     meditation = BiWeeklyHabit(
         name      = "[Sample] Meditation",
         begn_date = four_weeks_ago,
-        descp     = "Meditate at least once every two weeks."
+        descp     = "Meditate at least once every two weeks.",
+        _bypass_date_check = True
     )
 
     # only one completion in 4 weeks
@@ -180,4 +182,26 @@ def create_sample_habits() -> list:
     # manually pause — reflects _manually_paused flag
     meditation.deactivate_habit()
 
-    return [exercise, drink_water, gym, review_finances, meditation]
+    # ── 6. Journaling — DailyHabit ───────────────────────────────────────
+    # Struggling — started 4 weeks ago but only completed twice, both in the first week. Has not been completed since.
+
+    journaling = DailyHabit(
+        name      = "[Sample] Journaling",
+        begn_date = four_weeks_ago,
+        descp     = "Write in journal every day.",
+        _bypass_date_check = True
+    )
+
+    # only two completions, both in week 1
+    journaling._completions.append(
+        _make_datetime(four_weeks_ago + timedelta(days=1), hour=21)
+    )
+    journaling._completions.append(
+        _make_datetime(four_weeks_ago + timedelta(days=2), hour=22)
+    )
+
+    journaling.notes[four_weeks_ago + timedelta(days=10)] = (
+        "Haven't been keeping up with this habit."
+    )
+
+    return [exercise, drink_water, gym, review_finances, meditation, journaling]

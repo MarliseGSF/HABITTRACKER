@@ -200,7 +200,7 @@ def _show_longest_streak(tracker: HabitTracker) -> None:
     print_header("Longest Streak")
     best = an.get_longest_streak_all_habits(tracker.habits)
     if best:
-        print(f"{best.name} → {best.get_longest_streak()} periods")
+        print(f"{best.name} → {best.get_longest_habit_streak()} periods")
     else:
         print("No data yet.")
 
@@ -216,7 +216,7 @@ def _show_struggling(tracker: HabitTracker) -> None:
     struggling = an.get_struggling_habits(tracker.habits)
     if struggling:
         for h in struggling:
-            print(f"  → {h.name} (best streak: {h.get_longest_streak()} periods)")
+            print(f"  → {h.name} (best streak: {h.get_longest_habit_streak()} periods)")
     else:
         print("No struggling habits — good job!")
 
@@ -245,7 +245,11 @@ def _show_time_analysis(tracker: HabitTracker) -> None:
     """
     print_header("Completion Time Analysis")
     analysis = an.get_completion_time_analysis(tracker.habits)
-    print(f"Overall most common time: {analysis['overall'] or 'No data'}\n")
+    overall = analysis['overall'] or 'No data'
+    if overall and "/" in overall:
+        print(f"  Overall most common time: {overall} (tied)")
+    else:
+        print(f"  Overall most common time: {overall}")
     print("Per habit:")
     for habit_name, bracket in analysis["per_habit"].items():
         print(f"    {habit_name} → {bracket or 'No data'}")
@@ -344,6 +348,12 @@ def handle_add_habit(conn, tracker: HabitTracker, is_sample: bool) -> None:
     if start_input:
         try:
             start_date = date.fromisoformat(start_input)
+
+            """
+            if start_date < date.today():
+                print("Start date cannot be in the past — using today's date.")
+                start_date = None
+            """
         except ValueError:
             print("Invalid date format — using today's date.")
             start_date = None
@@ -534,6 +544,7 @@ def handle_pause_resume(conn, tracker: HabitTracker, is_sample: bool) -> None:
     else:
         print("Sample Habit, the change will not be permanently stored.")
 
+
 def handle_analytics(tracker: HabitTracker) -> None:
     """
     Function that creates a submenu with the different analysis position.
@@ -635,7 +646,7 @@ def handle_modify_habit(conn, tracker: HabitTracker, is_sample) -> None:
             
             if not habit.name.startswith("[Sample]"):
                 st.save_habit(conn, habit)
-                print(f"\Start date updated to {new_date} and saved.")
+                print(f"Start date updated to {new_date} and saved.")
             else:
                 print(f"\nStart date updated to {new_date}.")
                 print("Sample Habit, the change will not be permanently stored.")

@@ -42,6 +42,39 @@ def _time_bracket(dt: datetime) -> str:
         return "Evening"
     else:
         return "Night"
+    
+
+def _get_overall_bracket(all_completions: list) -> str | None:
+    """
+    Function that returns the most common time bracket across all completions.
+    If there is a tie, returns all tied brackets separated by '/'.
+
+    Argumentss:
+        all_completions: list of datetime objects.
+
+    Returns:
+        Most common bracket string, tied brackets as 'Morning/Evening', or None if no completions.
+    """
+    if not all_completions:
+        return None
+
+    all_brackets = list(map(_time_bracket, all_completions))
+
+    bracket_counts = reduce(
+        lambda counts, b: {**counts, b: counts.get(b, 0) + 1},
+        all_brackets,
+        {}
+    )
+
+    max_count = max(bracket_counts.values())
+
+    # find ALL brackets that share the maximum count
+    tied_brackets = list(filter(
+        lambda b: bracket_counts[b] == max_count,
+        bracket_counts
+    ))
+
+    return "/".join(tied_brackets)
 
 # --- Functions Definition ---
 
@@ -420,7 +453,9 @@ def get_completion_time_analysis(habits_list: list[Habit]) -> dict:
         {}
     )
 
-    overall = max(overall_counts, key=lambda b: overall_counts[b])
+    max_count = max(overall_counts.values())
+    tied = list(filter(lambda b: overall_counts[b] == max_count, overall_counts))
+    overall = "/".join(tied)
 
     return {
         "overall": overall,

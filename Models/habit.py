@@ -27,7 +27,8 @@ class Habit:
                  name: str, 
                  freq: Frequency,
                  begn_date: Optional[date] = None, 
-                 descp: Optional[str] = None
+                 descp: Optional[str] = None, 
+                 _bypass_date_check: bool = False
                  ):
         """
         Function that initializes a new habit
@@ -39,7 +40,7 @@ class Habit:
             descp: description of the habit, optional argument, can be changed at any time. 
 
         Raises: 
-            ValueError: if name is empty or whitespace.
+            ValueError: if name is empty or whitespace, ir if the start date is in the past.
             TypeError: if name is not a string or Frequency is not a Frequency(Enum) value.
 
         """
@@ -51,6 +52,9 @@ class Habit:
         
         if not isinstance(freq, Frequency):
             raise TypeError("The habit must be daily, weekly, twice a week, or bi-weekly,")
+        
+        if begn_date and begn_date < date.today() and not _bypass_date_check:
+            raise ValueError("Start date cannot be in the past.")
         
         self._name = name
         self._frequency = freq
@@ -357,14 +361,14 @@ class Habit:
         """
         Function to allow the user to deactivate an habit without deleting its history.
         """
-        self._manually_paused = False
+        self._manually_paused = True
 
 
     def reactivate_habit(self) -> None:
         """
         Function to allow the user to reactivate an habit.
         """
-        self._manually_paused = True
+        self._manually_paused = False
 
 
 
