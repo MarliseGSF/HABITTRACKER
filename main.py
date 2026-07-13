@@ -676,14 +676,14 @@ def handle_analytics(tracker: HabitTracker) -> None:
         "7": (" Newest Habit",                 lambda: _show_newest_habit(tracker)),      # ← new
         "8": (" Never Completed Habits",       lambda: _show_never_completed(tracker)),   # ← new
         "9": (" Completion Rate by Frequency", lambda: _show_rate_by_frequency(tracker)), # ← new
-        "10": ("Back to main menu",           lambda: None)
+        "0": ("Back to main menu",           lambda: None)
     }
 
     for key, (label, _) in options.items():
         print(f"  {key}. {label}")
 
     choice = get_valid_input(
-        "\n  Choose option (1-10): ",
+        "\n  Choose option (0-9): ",
         list(options.keys())
     )
 
@@ -795,7 +795,7 @@ def main() -> None:
         "7": (" Modify a habit",        lambda: handle_modify_habit(conn, tracker, is_sample)),
         "8": (" Delete a habit",        lambda: handle_delete_habit(conn, tracker)),
         "9": (" Analytics",             lambda: handle_analytics(tracker)),
-        "10": ("Exit",                  None)
+        "0": ("Exit",                  None)
     }
 
     while True:
@@ -808,13 +808,13 @@ def main() -> None:
             print(f"  {key}. {label}")
 
         choice = get_valid_input(
-            "\n  Choose option (1-10): ",
+            "\n  Choose option (0-9): ",
             list(menu_options.keys())
         )
 
         clear_screen()
 
-        if choice == "10":
+        if choice == "0":
             shutdown(conn, tracker, is_sample)
             break
 
