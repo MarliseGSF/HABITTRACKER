@@ -171,6 +171,73 @@ def get_valid_input(prompt: str, valid_options: list) -> str:
             return choice
         print(f"Invalid option. Please choose from {valid_options}")
 
+    
+def get_valid_date(prompt: str, allow_empty: bool = True, reject_past: bool = False, reject_future: bool = False) -> date | None:
+    """
+    Function that prompts the user to enter a valid date.
+
+    Args:
+        prompt: the input prompt to display.
+        allow_empty: if True, empty input returns today's date.
+        reject_past: if True, rejects dates before today.
+        reject_future: if True, rejects dates after today.
+
+    Returns:
+        A valid date object, or None if allow_empty and input empty.
+    """
+    while True:
+        date_input = input(prompt).strip()
+
+        if not date_input:
+            if allow_empty:
+                return date.today()
+            else:
+                print("Date cannot be empty. Please choose a valid date.")
+                continue
+
+        try:
+            parsed = date.fromisoformat(date_input)
+
+            if reject_past and parsed < date.today():
+                print("Date cannot be in the past. Please choose a valid date.")
+                continue
+
+            if reject_future and parsed > date.today():
+                print("Date cannot be in the future. Please choose a valid date.")
+                continue
+
+            return parsed
+
+        except ValueError:
+            print("Invalid date format. Please use YYYY-MM-DD.")
+
+
+def get_valid_name(prompt: str, reserved_prefix: str = None) -> str:
+    """
+    Function that prompts the user to enter a valid name.
+
+    Args:
+        prompt: the input prompt to display.
+        reserved_prefix: if provided, names starting with this prefix are rejected.
+
+    Returns:
+        A valid name string.
+    """
+    while True:
+        name = input(prompt).strip()
+
+        if not name:
+            print("Name cannot be empty. Please write a valid name.")
+            continue
+
+        if reserved_prefix and name.startswith(reserved_prefix):
+            print(
+                f"Names cannot start with '{reserved_prefix}' — this prefix is reserved for demonstration habits."
+            )
+            continue
+
+        return name
+
 
 # --- Analytics Helper Functions ---
 
@@ -255,6 +322,7 @@ def _show_time_analysis(tracker: HabitTracker) -> None:
     for habit_name, bracket in analysis["per_habit"].items():
         print(f"    {habit_name} → {bracket or 'No data'}")
 
+
 def _show_oldest_habit(tracker: HabitTracker) -> None:
     """
     Function that displays the habit with the earliest start date.
@@ -270,6 +338,7 @@ def _show_oldest_habit(tracker: HabitTracker) -> None:
             print(f"→ {h.name}")
     else:
         print("No data yet.")
+
 
 def _show_newest_habit(tracker: HabitTracker) -> None:
     """
@@ -385,15 +454,8 @@ def handle_add_habit(conn, tracker: HabitTracker, is_sample: bool) -> None:
     """
     print_header("Add New Habit")
 
-    name = input("Habit name: ").strip()
-    if not name:
-        print("Name cannot be empty.")
-        return
+    name = get_valid_name("Habit name: ", reserved_prefix="[Sample]")
     
-    if name.startswith("[Sample]"):
-        print("Habit names cannot start with '[Sample]', this is reserved for demonstration habits.")
-        return
-
     print("\nFrequency options:")
     print("  1. Daily")
     print("  2. Twice weekly (twice every week)")
@@ -408,21 +470,9 @@ def handle_add_habit(conn, tracker: HabitTracker, is_sample: bool) -> None:
     description = input("Description (optional, press Enter to skip): ").strip()
     description = description if description else None
 
-    start_input = input("Start date (YYYY-MM-DD, press Enter for today): ").strip()
-    if start_input:
-        try:
-            start_date = date.fromisoformat(start_input)
-
-            """
-            if start_date < date.today():
-                print("Start date cannot be in the past — using today's date.")
-                start_date = None
-            """
-        except ValueError:
-            print("Invalid date format — using today's date.")
-            start_date = None
-    else:
-        start_date = None
+    start_date = get_valid_date(
+        "Start date (YYYY-MM-DD, press Enter for today): ",
+        allow_empty  = True, reject_past  = True)
 
     # map choice to child class
     habit_classes = {
@@ -451,12 +501,11 @@ def handle_add_habit(conn, tracker: HabitTracker, is_sample: bool) -> None:
     except ValueError as e:
         print(f"Could not add habit: {e}")
 
-def handle_view_habit_details(conn, tracker: HabitTracker) -> None:
+def handle_view_habit_details(tracker: HabitTracker) -> None:
     """
     Function that displays all the information on a chosen habit.
 
     Arguments: 
-        conn: open database connection.
         tracker: the HabitTracker.
     """
     print_header("Habit Details")
@@ -499,7 +548,7 @@ def handle_view_habit_details(conn, tracker: HabitTracker) -> None:
         print(f"\nNotes: None")
 
 
-def handle_complete_habit(conn, tracker: HabitTracker, is_sample: bool) -> None:
+def handle_complete_habit(conn, tracker: HabitTracker) -> None:
     """
     Function that marks the habit has having been completed.
 
@@ -534,7 +583,8 @@ def handle_complete_habit(conn, tracker: HabitTracker, is_sample: bool) -> None:
     except ValueError as e:
         print(f"\n{e}")
 
-def handle_add_note(conn, tracker: HabitTracker, is_sample: bool) -> None:
+
+def handle_add_note(conn, tracker: HabitTracker) -> None:
     """
     Function to allow the user to add a note to a specific date. 
 
@@ -550,17 +600,15 @@ def handle_add_note(conn, tracker: HabitTracker, is_sample: bool) -> None:
     if habit is None:
         return
 
-    date_input = input("Date for note (YYYY-MM-DD, Enter for today): ").strip()
-    if date_input:
-        try:
-            note_date = date.fromisoformat(date_input)
-        except ValueError:
-            print("Invalid date format.")
-            return
-    else:
-        note_date = date.today()
+    note_date = get_valid_date(
+        "Date for note (YYYY-MM-DD, press Enter for today): ",
+        allow_empty = True, reject_future = True)
 
-    note = input("Note: ").strip()
+    while True:
+        note = input("Note: ").strip()
+        if note:
+            break
+        print("Note cannot be empty.")
 
     try:
         result = habit.add_note(note_date, note)
@@ -607,7 +655,7 @@ def handle_delete_habit(conn, tracker: HabitTracker) -> None:
         print("Deletion cancelled.")
 
 
-def handle_pause_resume(conn, tracker: HabitTracker, is_sample: bool) -> None:
+def handle_pause_resume(conn, tracker: HabitTracker) -> None:
     """
     Function that allows the user to pause, and resume his/hers habits. 
 
@@ -672,10 +720,10 @@ def handle_analytics(tracker: HabitTracker) -> None:
         "3": (" Struggling Habits",            lambda: _show_struggling(tracker)),
         "4": (" Most Consistent Habit",        lambda: _show_most_consistent(tracker)),
         "5": (" Completion Time Analysis",     lambda: _show_time_analysis(tracker)),
-        "6": (" Oldest Habit",                 lambda: _show_oldest_habit(tracker)),      # ← new
-        "7": (" Newest Habit",                 lambda: _show_newest_habit(tracker)),      # ← new
-        "8": (" Never Completed Habits",       lambda: _show_never_completed(tracker)),   # ← new
-        "9": (" Completion Rate by Frequency", lambda: _show_rate_by_frequency(tracker)), # ← new
+        "6": (" Oldest Habit",                 lambda: _show_oldest_habit(tracker)),
+        "7": (" Newest Habit",                 lambda: _show_newest_habit(tracker)),
+        "8": (" Never Completed Habits",       lambda: _show_never_completed(tracker)),
+        "9": (" Completion Rate by Frequency", lambda: _show_rate_by_frequency(tracker)),
         "0": ("Back to main menu",           lambda: None)
     }
 
@@ -691,7 +739,7 @@ def handle_analytics(tracker: HabitTracker) -> None:
     action()
 
 
-def handle_modify_habit(conn, tracker: HabitTracker, is_sample) -> None:
+def handle_modify_habit(conn, tracker: HabitTracker) -> None:
     """
     Function that allows the user to modify the habits allowed fields (description and start date if the habit has no completions yet).
 
@@ -752,22 +800,19 @@ def handle_modify_habit(conn, tracker: HabitTracker, is_sample) -> None:
             print(f"\nCould not save: {e}")
 
     elif choice == "2" and not habit.completions:
-        date_input = input(
-            "\nNew start date (YYYY-MM-DD): "
-        ).strip()
+        new_date = get_valid_date(
+            "\nNew start date (YYYY-MM-DD): ",
+            allow_empty = False, reject_past = True)
+
         try:
-            new_date = date.fromisoformat(date_input)
-            if new_date < date.today():
-                print(f"\nStart date cannot be in the past.")
-                return
             habit.start_date = new_date
-            
+
             if not habit.name.startswith("[Sample]"):
                 st.save_habit(conn, habit)
-                print(f"Start date updated to {new_date} and saved.")
+                print(f"\nStart date updated to {new_date} and saved.")
             else:
                 print(f"\nStart date updated to {new_date}.")
-                print("Sample Habit, the change will not be permanently stored.")
+                print("\nSample Habit, the change will not be permanently stored.")
 
         except ValueError as e:
             print(f"\n{e}")
@@ -787,12 +832,12 @@ def main() -> None:
     # main menu options — same dispatch pattern as analytics
     menu_options = {
         "1": (" View all habits",       lambda: handle_view_habits(tracker)),
-        "2": (" View habit details",    lambda: handle_view_habit_details(conn, tracker)),
+        "2": (" View habit details",    lambda: handle_view_habit_details(tracker)),
         "3": (" Add a new habit",       lambda: handle_add_habit(conn, tracker, is_sample)),
-        "4": (" Complete a habit",      lambda: handle_complete_habit(conn, tracker, is_sample)),
-        "5": (" Add a note",            lambda: handle_add_note(conn, tracker, is_sample)),
-        "6": (" Pause / Resume habit",  lambda: handle_pause_resume(conn, tracker, is_sample)),
-        "7": (" Modify a habit",        lambda: handle_modify_habit(conn, tracker, is_sample)),
+        "4": (" Complete a habit",      lambda: handle_complete_habit(conn, tracker)),
+        "5": (" Add a note",            lambda: handle_add_note(conn, tracker)),
+        "6": (" Pause / Resume habit",  lambda: handle_pause_resume(conn, tracker)),
+        "7": (" Modify a habit",        lambda: handle_modify_habit(conn, tracker)),
         "8": (" Delete a habit",        lambda: handle_delete_habit(conn, tracker)),
         "9": (" Analytics",             lambda: handle_analytics(tracker)),
         "0": ("Exit",                  None)
