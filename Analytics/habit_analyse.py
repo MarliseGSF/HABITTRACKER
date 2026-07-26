@@ -257,7 +257,7 @@ def get_habits_never_completed(habits_list: list[Habit]) -> list[Habit]:
     Returns:
         List of habits with no completions. Empty list if none.
     """
-    return list(filter(lambda h: _should_be_analysed(h) and len(h.completions) == 0, habits_list))
+    return list(filter(lambda h: h.habit_has_started and len(h.completions) == 0, habits_list))
 
 
 def get_most_consistent_habit(habits_list: list[Habit]) -> Habit | None:
