@@ -205,22 +205,22 @@ def get_valid_date(prompt: str, allow_empty: bool = True, reject_past: bool = Fa
             parsed = date.fromisoformat(date_input)
 
             if reject_past and parsed < date.today():
-                print("Date cannot be in the past. Please choose a valid date.")
+                print("\nDate cannot be in the past. Please choose a valid date.")
                 continue
 
             if reject_future and parsed > date.today():
-                print("Date cannot be in the future. Please choose a valid date.")
+                print("\nDate cannot be in the future. Please choose a valid date.")
                 continue
 
             if min_date and parsed < min_date:
                 print(
-                    f"Date cannot be before {min_date}. Please choose a valid date.")
+                    f"\nDate cannot be before {min_date}. Please choose a valid date.")
                 continue
 
             return parsed
 
         except ValueError:
-            print("Invalid date format. Please use YYYY-MM-DD.")
+            print("\nInvalid date format. Please use YYYY-MM-DD.")
 
 
 def get_valid_name(prompt: str, reserved_prefix: str = None) -> str:
@@ -644,13 +644,12 @@ def handle_complete_late(conn, tracker: HabitTracker) -> None:
                 if not habit.name.startswith("[Sample]"):
                     st.save_habit(conn, habit)
                 else:
-                    print("Sample habit — completion not saved permanently.")
+                    print("\nSample habit — completion not saved permanently.")
                 break
 
             else:
                 print(
-                    f"\n{completion_date} already has a completion recorded."
-                    f"\nEarliest allowed date : {earliest_allowed}"
+                    f"\n{habit.name} already has a completion recorded for that date {completion_date}."
                 )
                 retry = get_valid_input(
                     "\nWould you like to write a different date? (y/n): ",
@@ -676,36 +675,57 @@ def handle_add_note(conn, tracker: HabitTracker) -> None:
     print_header("Add Note")
 
     habit = select_habit_from_list(tracker)
-
     if habit is None:
+        return
+
+    if not habit.habit_has_started:
+        print(f"\nThe habit'{habit.name}' has not started yet.")
+        print(f"Start date: {habit.start_date}")
         return
     
     grace_days = int((habit.PERIOD_DAYS / 2) + 2)
     max_days_back = habit.PERIOD_DAYS + grace_days
     earliest_allowed = date.today() - timedelta(days=max_days_back)
 
-    note_date = get_valid_date(
-        "Date for note (YYYY-MM-DD, press Enter for today): ",
+    print(f"\n'{habit.name}' grace period:")
+    print(f"     Earliest allowed date: {earliest_allowed}")
+    print(f"     Latest allowed date:   {date.today()}")
+
+    while True: 
+        note_date = get_valid_date(
+        "\nDate for note (YYYY-MM-DD, press Enter for today): ",
         allow_empty = True, reject_future = True, min_date = earliest_allowed)
+        
+        while True:
+            note = input("Note: ").strip()
+            if note:
+                break
+            print("Note cannot be empty.")
 
-    while True:
-        note = input("Note: ").strip()
-        if note:
-            break
-        print("Note cannot be empty.")
+        try:
+            result = habit.add_note(note_date, note)
+            if result:
+                print(f"Note added for the {note_date} completion.")
+                if not habit.name.startswith("[Sample]"):
+                    st.save_habit(conn, habit)
+                else: 
+                    print("Sample Habit, the note will not be permanently stored.")
+                break
 
-    try:
-        result = habit.add_note(note_date, note)
-        if result:
-            print(f"Note added for the {note_date} completion.")
-            if not habit.name.startswith("[Sample]"):
-                st.save_habit(conn, habit)
-            else: 
-                print("Sample Habit, the note will not be permanently stored.")
-        else:
-            print(f"Could not add note — date may be outside grace period.")
-    except ValueError as e: 
-        print(f"{e}")
+            else:
+                print(f"Could not add note — date may be outside grace period."
+                      f"\n     Start of the grace period: {earliest_allowed}")
+
+            retry = get_valid_input(
+                    "\nWould you like to try a different date? (y/n): ",
+                    ["y", "n"]
+                )
+            if retry == "n":
+                print("\nNote cancelled.")
+                break
+            
+        except ValueError as e: 
+            print(f"{e}")
 
 
 def handle_delete_habit(conn, tracker: HabitTracker) -> None:
