@@ -141,16 +141,14 @@ def print_habit_summary(habit) -> None:
     Argumnts: 
         habit: the habit to be printed.
     """
-    if habit._manually_paused:
-        status = "Manually Paused"
-    elif not habit.is_active:
-        status = "Auto-Paused (completion needed to reactivate)"
-    else:
-        status = "Active"
+    if not habit.habit_has_started: status = "Not started yet"
+    elif habit._manually_paused: status = "Manually Paused"
+    elif not habit.is_active: status = "Auto-Paused (completion needed)"
+    else: status = "Active"
     started = "Started" if habit.habit_has_started else "Not started yet"
     print(f"  {habit.name}")
     print(f"    Frequency      : {habit.frequency.value}")
-    print(f"    Status         : {status} ({started})")
+    print(f"    Status         : {status}") #{status} ({started})")
     print(f"    Start date     : ({habit.start_date})")
     print(f"    Streak         : {habit.get_current_habit_streak()} periods")
     print(f"    Completions    : {len(habit.completions)}")
@@ -177,7 +175,7 @@ def get_valid_input(prompt: str, valid_options: list) -> str:
         print(f"Invalid option. Please choose from {valid_options}")
 
     
-def get_valid_date(prompt: str, allow_empty: bool = True, reject_past: bool = False, reject_future: bool = False, min_date: date = None) -> date | None:
+def get_valid_date(prompt: str, allow_empty: bool = True, reject_past: bool = False, reject_future: bool = False, min_date: date = None, min_date_message: str = None) -> date | None:
     """
     Function that prompts the user to enter a valid date.
 
@@ -187,6 +185,7 @@ def get_valid_date(prompt: str, allow_empty: bool = True, reject_past: bool = Fa
         reject_past: if True, rejects dates before today.
         reject_future: if True, rejects dates after today.
         min_date: if provided, rejects dates before this date.
+        min_message: if provided, message to be shown to the user in case the input date is rejected.
 
     Returns:
         A valid date object, or None if allow_empty and input empty.
@@ -214,6 +213,7 @@ def get_valid_date(prompt: str, allow_empty: bool = True, reject_past: bool = Fa
 
             if min_date and parsed < min_date:
                 print(
+                    min_date_message or
                     f"\nDate cannot be before {min_date}. Please choose a valid date.")
                 continue
 
@@ -399,6 +399,77 @@ def _show_rate_by_frequency(tracker: HabitTracker) -> None:
             print(f"  {freq.value.upper()}: {rate * 100:.1f}%")
 
 
+def _show_recent_completions(habit: Habit, n: int = 5) -> None:
+    """
+    Function that allows the user to display the last N completions for a habit.
+
+    Arguments: 
+        habit: habit to be accessed.
+        n: number of completions to be displayed.
+    """
+    if not habit.completions:
+        print("\nNo completions yet.")
+        return
+
+    recent = sorted(habit.completions, reverse=True)[:n]
+    print(f"\nLast {len(recent)} completion(s):")
+    for c in recent:
+        print(f"→ {c.strftime('%Y-%m-%d %H:%M')}")
+
+
+def _show_recent_notes(habit: Habit, n: int = 5) -> None:
+    """
+    Function that allows the user to display the last N notes for a habit.
+
+    Arguments: 
+        habit: habit to be accessed.
+        n: number of notes to be displayed.
+    """
+    if not habit.notes:
+        print("\nNo notes yet.")
+        return
+
+    recent = sorted(habit.notes.items(), reverse=True)[:n]
+    print(f"\nLast {len(recent)} note(s):")
+    for note_date, note_text in recent:
+        print(f"→ {note_date}: {note_text}")
+
+
+def _get_history_count(default: int = 5, item_name: str = "items", total: int = None) -> int:
+    """
+    Funtion that asks the user how many recent items to display.
+    Defaults to 5 if Enter is pressed.
+
+    Arguments:
+        default: the default number to show.
+        item_name: name of the item.
+        total: total of items available.
+
+    Returns:
+        The number of items to display.
+    """
+    total_str = f" ({total} available)" if total is not None else ""
+    while True:
+        choice = input(
+            f"\nHow many {item_name} to show{total_str} (in descending order)? (press Enter for {default}): "
+        ).strip()
+
+        if not choice:
+            return min(default, total) if total else default
+
+        try:
+            n = int(choice)
+            if n < 1:
+                print("Please enter a number greater than 0.")
+                continue
+            if total and n > total:
+                print(f"Only {total} {item_name} available — showing all.")
+                return total
+            return n
+        except ValueError:
+            print("Please enter a valid number.")
+
+
 def select_habit_from_list(tracker: HabitTracker) -> "Habit | None":
     """
     Function that displays a numbered list of habits and lets the user select one by number.
@@ -417,14 +488,10 @@ def select_habit_from_list(tracker: HabitTracker) -> "Habit | None":
 
     print("\nAvailable habits:")
     for i, habit in enumerate(habits, start=1):
-        if habit._manually_paused:
-            status = "Manually Paused"
-        elif not habit.is_active:
-            status = "Auto-Paused (completion needed)"
-        elif not habit.habit_has_started:
-            status = "Not started yet"
-        else:
-            status = "Active"
+        if not habit.habit_has_started: status = "Not started yet"
+        elif habit._manually_paused: status = "Manually Paused"
+        elif not habit.is_active: status = "Auto-Paused (completion needed)"
+        else: status = "Active"
 
         print(f"{i}. {habit.name} ({habit.frequency.value}, {status})")
 
@@ -522,7 +589,7 @@ def handle_add_habit(conn, tracker: HabitTracker, is_sample: bool) -> None:
 
 def handle_view_habit_details(tracker: HabitTracker) -> None:
     """
-    Function that displays all the information on a chosen habit.
+    Function that displays detailed information on a chosen habit.
 
     Arguments: 
         tracker: the HabitTracker.
@@ -533,12 +600,20 @@ def handle_view_habit_details(tracker: HabitTracker) -> None:
     if habit is None:
         return
 
-    status = "Active" if habit.is_active else "Paused"
-    started = "Started" if habit.habit_has_started else "Not started yet"
+    if not habit.habit_has_started:
+        status = "Not started yet"
+    elif habit._manually_paused:
+        status = "Manually Paused"
+    elif not habit.is_active:
+        status = "Auto-Paused (completion needed to reactivate)"
+    else:
+        status = "Active"
+
+
     print(f"\n ══ {habit.name} ══")
     print(f"\nGeneral")
     print(f"Frequency    : {habit.frequency.value}")
-    print(f"Status       : {status} ({started})")
+    print(f"Status       : {status}")
     print(f"Created      : {habit.created_date}")
     print(f"Start date   : {habit.start_date}")
     if habit.description:
@@ -559,12 +634,15 @@ def handle_view_habit_details(tracker: HabitTracker) -> None:
         print(f"Last completion : {max(c.date() for c in habit.completions)}")
         print(f"First completion: {min(c.date() for c in habit.completions)}")
 
+    n = _get_history_count(default = 5, item_name = "completions", total = len(habit.completions))
+    _show_recent_completions(habit, n)
+
     if habit.notes:
-        print(f"\nNotes")
-        for note_date, note_text in sorted(habit.notes.items()):
-            print(f"    {note_date}: {note_text}")
+       #print(f"Total : {len(habit.notes)}")
+       n = _get_history_count(default = 5, item_name = "notes", total = len(habit.notes))
+       _show_recent_notes(habit, n)
     else:
-        print(f"\nNotes: None")
+        print("None")
 
 
 def handle_complete_habit(conn, tracker: HabitTracker) -> None:
@@ -584,7 +662,7 @@ def handle_complete_habit(conn, tracker: HabitTracker) -> None:
         return
 
     if not habit.habit_has_started:
-        print(f"The habit '{habit.name}' has not started yet (starts {habit.start_date}).")
+        print(f"The habit '{habit.name}' has not started yet (starts {habit.start_date}). Please update the start date to start tracking the habit.")
         return
     
     try:
@@ -624,15 +702,28 @@ def handle_complete_late(conn, tracker: HabitTracker) -> None:
     
     grace_days = int((habit.PERIOD_DAYS / 2) + 2)
     max_days_back = habit.PERIOD_DAYS + grace_days
-    earliest_allowed = date.today() - timedelta(days=max_days_back)
+    earliest_allowed = max(
+        date.today() - timedelta(days=max_days_back),
+        habit.start_date    # ← can't go before habit started
+    )
 
     print(f"\n'{habit.name}' grace period:")
     print(f"     Earliest allowed date: {earliest_allowed}")
     print(f"     Latest allowed date:   {date.today()}")
 
+    if habit.start_date > date.today() - timedelta(days=max_days_back):
+        message = (
+            f"\nDate cannot be before the habit's start date ({habit.start_date}). Please choose a valid date."
+        )
+    else:
+        message = (
+            f"Date is outside the grace period (earliest date: {earliest_allowed}). Please choose a valid date."
+        )
+
     while True:
         completion_date = get_valid_date(
-            "\nCompletion date (YYYY-MM-DD): ", allow_empty = False, reject_future = True, min_date = earliest_allowed)
+            "\nCompletion date (YYYY-MM-DD): ", 
+            allow_empty = False, reject_future = True, min_date = earliest_allowed, min_date_message = message)
 
         completion_datetime = datetime(completion_date.year, completion_date.month, completion_date.day, 0, 0)
 
@@ -641,6 +732,19 @@ def handle_complete_late(conn, tracker: HabitTracker) -> None:
 
             if result:
                 print(f"\nLate completion recorded for {completion_date}.")
+                if habit.is_active:
+                    print(f"The habit '{habit.name}' is now active.")
+                else:
+                    print(
+                        f"The habit '{habit.name}' remains paused — not enough recent completions to reactivate."
+                    )
+                    last = max(c.date() for c in habit.completions)
+                    days_since = (date.today() - last).days
+                    threshold = int(2 * ((habit.PERIOD_DAYS / 2) + 2))
+                    print(
+                        f"A completion within the last {threshold} days is needed to reactivate the habit."
+                    )
+
                 if not habit.name.startswith("[Sample]"):
                     st.save_habit(conn, habit)
                 else:
@@ -685,16 +789,47 @@ def handle_add_note(conn, tracker: HabitTracker) -> None:
     
     grace_days = int((habit.PERIOD_DAYS / 2) + 2)
     max_days_back = habit.PERIOD_DAYS + grace_days
-    earliest_allowed = date.today() - timedelta(days=max_days_back)
+    earliest_allowed = max(
+        date.today() - timedelta(days=max_days_back),
+        habit.start_date
+    )
 
     print(f"\n'{habit.name}' grace period:")
     print(f"     Earliest allowed date: {earliest_allowed}")
     print(f"     Latest allowed date:   {date.today()}")
 
+    if habit.start_date > date.today() - timedelta(days=max_days_back):
+        message = (
+            f"\nDate cannot be before the habit's start date ({habit.start_date}). Please choose a valid date."
+        )
+    else:
+        message = (
+            f"Date is outside the grace period (earliest date: {earliest_allowed}). Please choose a valid date."
+        )
+
     while True: 
         note_date = get_valid_date(
         "\nDate for note (YYYY-MM-DD, press Enter for today): ",
-        allow_empty = True, reject_future = True, min_date = earliest_allowed)
+        allow_empty = True, reject_future = True, min_date = earliest_allowed, min_date_message = message)
+
+        if note_date in habit.notes:
+            print(f"\nA note already exists for {note_date}:")
+            print(f"     '{habit.notes[note_date]}'")
+            confirm = get_valid_input(
+                "\n  Overwrite this note? (y/n): ",
+                ["y", "n"]
+            )
+            if confirm == "n":
+                print("\n  Note not changed.")
+                retry = get_valid_input(
+                    "  Try a different date? (y/n): ",
+                    ["y", "n"]
+                )
+                if retry == "n":
+                    print("\nNote cancelled.")
+                    break
+                else:
+                    continue
         
         while True:
             note = input("Note: ").strip()
