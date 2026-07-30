@@ -370,19 +370,26 @@ def _show_newest_habit(tracker: HabitTracker) -> None:
 
 def _show_never_completed(tracker: HabitTracker) -> None:
     """
-    Function that displays habits that do not have any completion.
+    Function that displays habits that do not have any completion and habits that have not yet started.
 
     Arguments: 
         tracker: the HabitTracker.
     """
     print_header("Never Completed Habits")
-    never = an.get_habits_never_completed(tracker.habits)
-    if never:
-        for h in never:
+    never_completed = an.get_habits_never_completed(tracker.habits)
+    not_started = list(filter( lambda h: not h.habit_has_started, tracker.habits))
+
+    if never_completed:
+        print("Habits pass their start date that have never been completed:")
+        for h in never_completed:
             print(f"→ {h.name} (started {h.start_date})")
     else:
-        print("All started habits have been completed at least once!")
+        print("All habits that have passed their defined start date have been completed at least once!")
 
+    if not_started:
+        print("\nHabits scheduled to start: ")
+        for h in not_started:
+            print(f"→ {h.name} (starts {h.start_date})")
 
 def _show_rate_by_frequency(tracker: HabitTracker) -> None:
     """
@@ -433,6 +440,39 @@ def _show_recent_notes(habit: Habit, n: int = 5) -> None:
     print(f"\nLast {len(recent)} note(s):")
     for note_date, note_text in recent:
         print(f"→ {note_date}: {note_text}")
+
+
+def _show_completions_for_date(tracker: HabitTracker) -> None:
+    """
+    Function that allows a user to check which habits were completed on a certain date.
+
+    Arguments: 
+        tracker: the HabitTracker.
+    """
+    print_header("Completions for a Date")
+
+    check_date = get_valid_date(
+        "\nEnter date to check (YYYY-MM-DD, press Enter for today)): ",
+        allow_empty = True, reject_future = True)
+
+    completed = list(filter(
+        lambda h: any(
+            c.date() == check_date for c in h.completions
+        ),
+        tracker.habits
+    ))
+
+    print(f"\nResults for {check_date}:")
+
+    if completed:
+        print(f"\nCompleted ({len(completed)}):")
+        for h in completed:
+            completion = next(
+                c for c in h.completions if c.date() == check_date
+            )
+            print(f"→ {h.name} at {completion.strftime('%H:%M')}")
+    else:
+        print("\nNo habits completed on this date.")
 
 
 def _get_history_count(default: int = 5, item_name: str = "items", total: int = None) -> int:
@@ -495,7 +535,7 @@ def select_habit_from_list(tracker: HabitTracker) -> "Habit | None":
 
         print(f"{i}. {habit.name} ({habit.frequency.value}, {status})")
 
-    print(f"    0. Cancel")
+    print(f"0. Cancel")
 
     valid = [str(i) for i in range(len(habits) + 1)]
     choice = get_valid_input(
@@ -666,10 +706,18 @@ def handle_complete_habit(conn, tracker: HabitTracker) -> None:
         return
     
     try:
+        was_active = habit.is_active
         result = habit.check_habit_completion(datetime.now())
 
         if result:
             print(f"'Habit {habit.name}' marked complete for today!")
+            if was_active: None
+            elif not was_active and habit.is_active:
+                print(f"The habit '{habit.name}' is now active.")
+            elif not was_active and not habit.is_active:
+                print(
+                    f"The habit '{habit.name}' remains paused — not enough recent completions to reactivate."
+                )
             if not habit.name.startswith("[Sample]"):
                 st.save_habit(conn, habit)
             else: 
@@ -696,7 +744,7 @@ def handle_complete_late(conn, tracker: HabitTracker) -> None:
         return
 
     if not habit.habit_has_started:
-        print(f"\nThe habit'{habit.name}' has not started yet.")
+        print(f"\nThe habit'{habit.name}' has not started yet. Please choose a valid date.")
         print(f"Start date: {habit.start_date}")
         return
     
@@ -727,19 +775,19 @@ def handle_complete_late(conn, tracker: HabitTracker) -> None:
 
         completion_datetime = datetime(completion_date.year, completion_date.month, completion_date.day, 0, 0)
 
+        was_active = habit.is_active
+
         try:
             result = habit.late_complete(completion_datetime)
 
             if result:
                 print(f"\nLate completion recorded for {completion_date}.")
-                if habit.is_active:
+
+                if was_active: None
+                elif not was_active and habit.is_active:
                     print(f"The habit '{habit.name}' is now active.")
-                else:
-                    print(
-                        f"The habit '{habit.name}' remains paused — not enough recent completions to reactivate."
-                    )
-                    last = max(c.date() for c in habit.completions)
-                    days_since = (date.today() - last).days
+                elif not was_active and not habit.is_active:
+                    print(f"The habit '{habit.name}' remains paused — not enough recent completions to reactivate.")
                     threshold = int(2 * ((habit.PERIOD_DAYS / 2) + 2))
                     print(
                         f"A completion within the last {threshold} days is needed to reactivate the habit."
@@ -783,7 +831,7 @@ def handle_add_note(conn, tracker: HabitTracker) -> None:
         return
 
     if not habit.habit_has_started:
-        print(f"\nThe habit'{habit.name}' has not started yet.")
+        print(f"\nThe habit'{habit.name}' has not started yet. Please choose a valid date.")
         print(f"Start date: {habit.start_date}")
         return
     
@@ -908,8 +956,14 @@ def handle_pause_resume(conn, tracker: HabitTracker) -> None:
     habit = select_habit_from_list(tracker)
     if habit is None:
         return
+    
+    if not habit.habit_has_started:
+        print(f"\n'{habit.name}' has not started yet.")
+        print(f"Start date: {habit.start_date}")
+        print(f"\nTo start tracking this habit please update its start date with option 8 (Modify a habit).")
+        return
 
-    if habit._manually_paused:
+    if habit._manually_paused or not habit.is_active:
         confirm = get_valid_input(
             f"\nResume '{habit.name}'? (y/n): ",
             ["y", "n"]
@@ -921,19 +975,21 @@ def handle_pause_resume(conn, tracker: HabitTracker) -> None:
         habit.reactivate_habit()
         print(f"\n'{habit.name}' resumed.")
 
+        if not habit.is_active:
+            # auto-paused due to abandonment threshold
+            grace_days = int((habit.PERIOD_DAYS / 2) + 2)
+            max_days_back = habit.PERIOD_DAYS + grace_days
+
+            print(f"\nDespite being manually resumed, the habit '{habit.name}' is currently inactive.")
+            print(f"This habit was automatically paused because no completion was recorded for more than {max_days_back} days.")
+            print(f"\nTo reactivate it, please record a completion using option 4 (Complete a habit) from the main menu.")
+        else: None
+
         if not habit.name.startswith("[Sample]"):
             st.save_habit(conn, habit)
         else:
             print("Sample Habit, the change will not be permanently stored.")
 
-    elif not habit.is_active:
-        # auto-paused due to abandonment threshold
-        grace_days = int((habit.PERIOD_DAYS / 2) + 2)
-        max_days_back = habit.PERIOD_DAYS + grace_days
-
-        print(f"\n{habit.name}' is currently inactive.")
-        print(f"This habit was automatically paused because no completion was recorded for more than {max_days_back} days.")
-        print(f"\nTo reactivate this habit, please record a completion using option 4 (Complete a habit) from the main menu.")
 
     else:
         confirm = get_valid_input(
@@ -965,23 +1021,24 @@ def handle_analytics(tracker: HabitTracker) -> None:
 
         # options dict — label and action defined together
         options = {
-            "1": (" Habits by Frequency",          lambda: _show_by_frequency(tracker)),
-            "2": (" Longest Streak",               lambda: _show_longest_streak(tracker)),
-            "3": (" Struggling Habits",            lambda: _show_struggling(tracker)),
-            "4": (" Most Consistent Habit",        lambda: _show_most_consistent(tracker)),
-            "5": (" Completion Time Analysis",     lambda: _show_time_analysis(tracker)),
-            "6": (" Oldest Habit",                 lambda: _show_oldest_habit(tracker)),
-            "7": (" Newest Habit",                 lambda: _show_newest_habit(tracker)),
-            "8": (" Never Completed Habits",       lambda: _show_never_completed(tracker)),
-            "9": (" Completion Rate by Frequency", lambda: _show_rate_by_frequency(tracker)),
-            "0": ("Back to main menu",           lambda: None)
+            "1": ("  Habits by Frequency",          lambda: _show_by_frequency(tracker)),
+            "2": ("  Longest Streak",               lambda: _show_longest_streak(tracker)),
+            "3": ("  Struggling Habits",            lambda: _show_struggling(tracker)),
+            "4": ("  Most Consistent Habit",        lambda: _show_most_consistent(tracker)),
+            "5": ("  Completion Time Analysis",     lambda: _show_time_analysis(tracker)),
+            "6": ("  Oldest Habit",                 lambda: _show_oldest_habit(tracker)),
+            "7": ("  Newest Habit",                 lambda: _show_newest_habit(tracker)),
+            "8": ("  Never Completed Habits",       lambda: _show_never_completed(tracker)),
+            "9": ("  Completion Rate by Frequency", lambda: _show_rate_by_frequency(tracker)),
+            "10": (" Completions for a Date",       lambda: _show_completions_for_date(tracker)),
+            "0": ("  Back to main menu",           lambda: None)
         }
 
         for key, (label, _) in options.items():
             print(f"  {key}. {label}")
 
         choice = get_valid_input(
-            "\n  Choose option (0-9): ",
+            "\n  Choose option (0-10): ",
             list(options.keys())
         )
 
