@@ -1,5 +1,5 @@
 """
-File with 5 pre-defined habits with simulated tracking data spanning 4 weeks. 
+File with 6 pre-defined habits with simulated tracking data spanning 4 weeks. 
 It is used to seed the database on the first run. 
 
 Habit patterns:
