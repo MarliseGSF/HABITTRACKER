@@ -6,16 +6,15 @@ from Models.habit_management import HabitTracker
 from Storage.habit_database import init_db
 
 
-# ── Database Fixtures ─────────────────────────────────────────────────────────
+# --- Database Set Up ---
 
 TEST_DB_PATH = "database/test_habits.db"
 
 @pytest.fixture
 def db_conn():
     """
-    Function that creates a fresh test database connection before each test
-    and deletes it after the test is complete. Keeps tests completely isolated from
-    the real database.
+    Function that creates a fresh test database connection before each test and deletes it after the test is complete. 
+    Keeps tests completely isolated from the real database.
 
     Yields:
         An open sqlite3 connection to a temporary test database.
@@ -23,11 +22,10 @@ def db_conn():
     conn = init_db(TEST_DB_PATH)
     yield conn
     conn.close()
-    if os.path.exists(TEST_DB_PATH):
-        os.remove(TEST_DB_PATH)
+    if os.path.exists(TEST_DB_PATH): os.remove(TEST_DB_PATH)
 
 
-# ── Simple Habit Fixtures (no completions) ────────────────────────────────────
+# --- Habit Fixtures (no completions) ---
 
 @pytest.fixture
 def daily_habit():
@@ -103,13 +101,13 @@ def paused_habit():
     return habit
 
 
-# ── Habit Fixtures With Completions ──────────────────────────────────────────
+# --- Habit Fixtures ---
 
 @pytest.fixture
 def daily_habit_with_streak():
     """
-    A DailyHabit with 7 consecutive daily completions
-    ending yesterday. Current streak should be 7.
+    A DailyHabit with 7 consecutive daily completions ending yesterday. 
+    Current streak should be 7.
     Use for testing streak calculations.
     """
     habit = DailyHabit(
@@ -120,10 +118,7 @@ def daily_habit_with_streak():
     for days_ago in range(7, 0, -1):
         completion_date = date.today() - timedelta(days=days_ago)
         habit.check_habit_completion(datetime(
-            completion_date.year,
-            completion_date.month,
-            completion_date.day,
-            8, 0
+            completion_date.year, completion_date.month, completion_date.day, 8, 0
         ))
     return habit
 
@@ -144,10 +139,7 @@ def daily_habit_with_gap():
     for days_ago in [10, 9, 8, 4, 3, 2, 1]:
         completion_date = date.today() - timedelta(days=days_ago)
         habit.check_habit_completion(datetime(
-            completion_date.year,
-            completion_date.month,
-            completion_date.day,
-            8, 0
+            completion_date.year, completion_date.month, completion_date.day, 8, 0
         ))
     return habit
 
@@ -167,10 +159,7 @@ def abandoned_habit():
     )
     completion_date = date.today() - timedelta(days=10)
     habit.check_habit_completion(datetime(
-        completion_date.year,
-        completion_date.month,
-        completion_date.day,
-        8, 0
+        completion_date.year, completion_date.month, completion_date.day, 8, 0
     ))
     return habit
 
@@ -178,8 +167,8 @@ def abandoned_habit():
 @pytest.fixture
 def habit_with_notes():
     """
-    A DailyHabit with a note added directly to the notes dict
-    (bypassing grace period for test setup purposes).
+    A DailyHabit with a note added directly to the notes dict.
+    Bypasses grace period for test setup purposes.
     """
     habit = DailyHabit(
         name  = "Test Notes",
@@ -189,7 +178,7 @@ def habit_with_notes():
     return habit
 
 
-# ── Tracker Fixtures ──────────────────────────────────────────────────────────
+# --- Tracker Fixtures ---
 
 @pytest.fixture
 def empty_tracker():
@@ -217,8 +206,8 @@ def populated_tracker():
 @pytest.fixture
 def tracker_with_completions():
     """
-    A HabitTracker with one DailyHabit that has 7 consecutive
-    completions. Use for analytics tests.
+    A HabitTracker with one DailyHabit that has 7 consecutive completions. 
+    Use for analytics tests.
     """
     tracker = HabitTracker()
     habit = DailyHabit(
@@ -229,10 +218,7 @@ def tracker_with_completions():
     for days_ago in range(7, 0, -1):
         completion_date = date.today() - timedelta(days=days_ago)
         habit.check_habit_completion(datetime(
-            completion_date.year,
-            completion_date.month,
-            completion_date.day,
-            8, 0
+            completion_date.year, completion_date.month, completion_date.day, 8, 0
         ))
     tracker.create_new_habit(habit)
     return tracker

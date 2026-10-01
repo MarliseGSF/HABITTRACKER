@@ -8,7 +8,7 @@ from datetime import date, datetime, timedelta
 from Models.habit import (Habit, DailyHabit, WeeklyHabit, BiWeeklyHabit, TwiceWeeklyHabit, Frequency)
 
 
-# ── Creation Tests ────────────────────────────────────────────────────────────
+# --- Creation Tests ---
 
 class TestHabitCreation:
     """Tests for creating valid and invalid habits."""
@@ -78,7 +78,7 @@ class TestHabitCreation:
         assert habit.description is None
 
 
-# ── Validation Tests ──────────────────────────────────────────────────────────
+# --- Validation Tests ---
 
 class TestHabitValidation:
     """Tests for input validation on creation."""
@@ -109,7 +109,7 @@ class TestHabitValidation:
             Habit("Exercise", None)
 
 
-# ── Immutability Tests ────────────────────────────────────────────────────────
+# --- Immutability Tests ---
 
 class TestHabitImmutability:
     """Tests that immutable fields cannot be changed after creation."""
@@ -143,7 +143,7 @@ class TestHabitImmutability:
             daily_habit.start_date = tomorrow
 
 
-# ── Completion Tests ──────────────────────────────────────────────────────────
+# --- Completion Tests ---
 
 class TestHabitCompletion:
     """Tests for check_habit_completion behaviour."""
@@ -213,7 +213,7 @@ class TestHabitCompletion:
         assert dates == sorted(dates)
 
 
-# ── Streak Tests ──────────────────────────────────────────────────────────────
+# --- Streak Tests ---
 
 class TestHabitStreak:
     """Tests for streak calculations."""
@@ -249,9 +249,8 @@ class TestHabitStreak:
 
     def test_twice_weekly_streak_requires_two_completions(self):
         """
-        TwiceWeeklyHabit streak only counts weeks with
-        at least 2 completions. A week with only 1 completion
-        does not satisfy the requirement.
+        TwiceWeeklyHabit streak only counts weeks with at least 2 completions. 
+        A week with only 1 completion does not satisfy the requirement.
         """
         habit = TwiceWeeklyHabit(
             name               = "Test Gym",
@@ -268,18 +267,16 @@ class TestHabitStreak:
         d3 = date.today() - timedelta(days=8)
 
         # current week — no completions (period 0)
-
         for d in [d1, d2, d3]:
             habit.check_habit_completion(
                 datetime(d.year, d.month, d.day, 8, 0)
             )
 
-        # verify our period assignments are correct
         # period 0: 0 completions → start from period 1
         # period 1: 1 completion < REQUIRED(2) → streak = 0
         assert habit.get_current_habit_streak() == 0
 
-# ── Status Tests ──────────────────────────────────────────────────────────────
+# --- Status Tests ---
 
 class TestHabitStatus:
     """Tests for is_active and has_started behaviour."""
@@ -322,7 +319,7 @@ class TestHabitStatus:
         assert daily_habit.habit_has_started == True
 
 
-# ── Note Tests ────────────────────────────────────────────────────────────────
+# --- Notes Tests ---
 
 class TestHabitNotes:
     """Tests for add_note behaviour."""
@@ -377,15 +374,14 @@ class TestHabitNotes:
         assert daily_habit.notes[date.today()] == "Second note."
 
 
-# ── Late Completion Tests ─────────────────────────────────────────────────────
+# --- Late Completion Tests ---
 
 class TestLateCompletion:
     """Tests for late_complete behaviour."""
 
     def test_late_completion_within_grace_period(self):
         """
-        Late completion within grace period returns True
-        and is stored.
+        Late completion within grace period returns True and is stored.
         """
         habit = DailyHabit(
             name               = "Test Late",
@@ -399,8 +395,7 @@ class TestLateCompletion:
 
     def test_late_completion_outside_grace_period_returns_false(self):
         """
-        Late completion outside grace period returns False
-        and is not stored.
+        Late completion outside grace period returns False and is not stored.
         """
         habit = DailyHabit(
             name               = "Test Late",
@@ -419,8 +414,7 @@ class TestLateCompletion:
 
     def test_late_completion_duplicate_returns_false(self):
         """
-        Late completion for an already-completed day
-        returns False.
+        Late completion for an already-completed day returns False.
         """
         habit = DailyHabit(
             name               = "Test Late Dup",

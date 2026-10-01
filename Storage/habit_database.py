@@ -185,6 +185,7 @@ def save_habit(conn: sqlite3.Connection, habit: Habit) -> bool:
                 habit.description,
                 1 if habit._manually_paused else 0
             ))
+            habit_id = cursor.lastrowid
 
         else:
             cursor.execute("""
